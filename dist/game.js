@@ -33,7 +33,7 @@ $('board').before(boardViewport);boardViewport.append($('board'));
 const resizeBoard=new ResizeObserver(entries=>{const {width,height}=entries[0].contentRect;const scale=Math.max(.1,Math.min((width-28)/600,(height-36)/600,1.3));$('board').style.setProperty('--board-scale',scale);});
 resizeBoard.observe(boardViewport);
 const actionDock=document.createElement('div');actionDock.className='action-dock';document.querySelector('.play-panel').append(actionDock);
-const compactActions=matchMedia('(max-width:760px), (max-height:550px)');
+const compactActions=matchMedia('(max-width:900px), (max-height:550px)');
 function placeActions(){const parent=compactActions.matches?actionDock:document.querySelector('.board-center');if(compactActions.matches){parent.append($('roll'),$('travel-controls'));}else{parent.insertBefore($('roll'),parent.querySelector('.board-foot'));parent.insertBefore($('travel-controls'),parent.querySelector('.board-foot'));}}
 compactActions.addEventListener('change',placeActions);placeActions();
 const eventPanel=document.createElement('div');eventPanel.className='event-panel';$('event-card').before(eventPanel);eventPanel.append($('event-card'));
