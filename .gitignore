@@ -1,5 +1,7 @@
 desktop.png
 mobile.png
+game-desktop.png
+game-mobile.png
 *.tar.gz
 *.tgz
 .playwright-mcp/

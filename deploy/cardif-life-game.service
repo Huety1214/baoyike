@@ -1,0 +1,14 @@
+[Unit]
+Description=Cardif Life Quest board game demo
+After=network.target
+
+[Service]
+WorkingDirectory=/home/changrun/cardif-life-demo
+ExecStart=/usr/bin/python3 /home/changrun/cardif-life-demo/deploy/serve.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

@@ -19,3 +19,18 @@
 驗證：`node tests/engine.test.cjs`
 
 本機預覽：`python -m http.server 8765 --bind 127.0.0.1 --directory dist`
+
+## 遊戲版 / VPS
+
+遊戲畫面使用 `game.css` 與 `game.js`：立體棋盤、角色棋子、骰子動畫、事件卡、規劃背包與冒險日誌。所有核心規則仍由 `engine.js` 計算。
+
+- 網址： https://life-game.ntut.org
+- 原始碼： `/home/changrun/cardif-life-demo`
+- Git remote： `vps:/home/changrun/repos/cardif-life-demo.git`
+- systemd user service： `cardif-life-game.service`
+- 監聽： `127.0.0.1:8390`
+- 日誌： `journalctl --user -u cardif-life-game.service`
+- 停止： `systemctl --user stop cardif-life-game.service`
+- 更新：筆電 commit 並 push VPS 的 `game-vps` 分支；VPS checkout 執行 `git pull --ff-only` 後 `systemctl --user restart cardif-life-game.service`。
+
+部署設定在 `deploy/`。HTTPS由nginx與Certbot管理；客戶輸入仍只存於瀏覽器。
