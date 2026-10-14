@@ -38,7 +38,7 @@ function placeActions(){const parent=compactActions.matches?actionDock:document.
 compactActions.addEventListener('change',placeActions);placeActions();
 const eventPanel=document.createElement('div');eventPanel.className='event-panel';$('event-card').before(eventPanel);eventPanel.append($('event-card'));
 const eventDetails=document.createElement('button');eventDetails.className='event-details';eventDetails.textContent='展開事件與學習回饋 ↗';eventPanel.append(eventDetails);
-const eventDialog=document.createElement('dialog');eventDialog.id='event-dialog';eventDialog.setAttribute('aria-label','事件詳情');eventDialog.innerHTML='<div class="report-top"><span class="eyebrow">EVENT DETAILS</span><button class="text-btn">關閉 ✕</button></div><div class="event-card"></div>';document.body.append(eventDialog);
+const eventDialog=document.createElement('dialog');eventDialog.id='event-dialog';eventDialog.setAttribute('aria-label','事件詳情');eventDialog.innerHTML='<button class="event-dismiss" aria-label="關閉事件">✕</button><div class="event-card"></div>';document.body.append(eventDialog);
 eventDialog.querySelector('button').onclick=()=>eventDialog.close();
 function syncEventDetails(){eventDialog.querySelector('.event-card').innerHTML=$('event-card').innerHTML;}
 eventDetails.onclick=()=>{pause();syncEventDetails();eventDialog.showModal();};
