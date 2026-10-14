@@ -1,4 +1,5 @@
 /* Journal / board / insurance, with no bottom toolbar or reserved footer row. */
+.board-center::before{display:none;content:none}
 body{grid-template-rows:62px minmax(0,1fr)}
 main{padding-bottom:14px}
 .workspace{grid-template-columns:280px minmax(0,1fr) 318px;gap:16px}
