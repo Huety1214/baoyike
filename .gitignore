@@ -1,0 +1,5 @@
+desktop.png
+mobile.png
+*.tar.gz
+*.tgz
+.playwright-mcp/

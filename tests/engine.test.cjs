@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict');
+const E=require('../dist/engine.js');
+const base={name:'測試',age:32,job:'工程師',jobType:'stable',income:1000000,expense:600000,cash:500000,stocks:400000,bonds:100000,property:6000000,debt:4000000,repayment:180000,interest:2,pension:240000,children:1,dependents:2,married:'yes',health:'healthy'};
+let s=E.create(base),before=E.net(s);assert.equal(E.transfer(s,'cash','stocks',100000),null);assert.equal(E.net(s),before);assert.ok(E.transfer(s,'cash','stocks',999999999));assert.ok(E.transfer(s,'cash','cash',1));
+s=E.create(base);s.remaining=6;let income=0,principal=0;for(let i=0;i<6;i++){const r=E.advance(s,()=>.5);income+=r.earned;principal+=r.paid;assert.equal(r.after-r.before,r.earned-r.living-r.fees-r.interest+r.stocks+r.bonds);}assert.equal(s.age,35);assert.equal(s.position,6);assert.equal(income,3000000);assert.equal(principal,540000);assert.equal(s.remaining,0);
+s=E.create({...base,stocks:0,bonds:0});s.position=1;E.togglePolicy(s,'accident');let e=E.event(s,()=>.5);assert.equal(e.numbers.claim,200000);assert.equal(e.numbers.own,50000);assert.equal(s.cash,450000);
+s=E.create(base);s.position=1;E.togglePolicy(s,'accident');e=E.event(s,()=>.1);assert.equal(e.numbers.claim,0,'意外保障不可賠疾病');
+s=E.create({...base,cash:0,stocks:100000,bonds:100000,property:6000000,income:0,expense:1000000,repayment:0,debt:0});s.remaining=1;E.advance(s,()=>.5);assert.equal(s.ended,true);assert.equal(s.reason,'bankruptcy');assert.equal(s.cash,0);assert.equal(s.stocks,0);assert.equal(s.bonds,0);assert.ok(s.shortfall>0);assert.equal(s.property,6000000);
+s=E.create({...base,age:64.5});s.remaining=2;assert.equal(E.advance(s,()=>.5).earned,500000);assert.equal(E.advance(s,()=>.5).earned,120000,'65歲後切換退休收入');
+s=E.create(base);E.togglePolicy(s,'life');const net=E.net(s);E.die(s,'測試');assert.equal(s.survivorBenefit,3000000);assert.equal(E.net(s),net);assert.ok(E.transfer(s,'cash','stocks',1));
+s=E.create({...base,age:99.5,income:0,pension:1000000});s.remaining=1;E.advance(s,()=>.5);assert.equal(s.reason,'death');assert.equal(s.age,100);
+s=E.create(base);s.position=2;E.event(s,()=>0);assert.equal(s.unemployed,2);s.remaining=3;assert.equal(E.advance(s,()=>.5).earned,0);assert.equal(E.advance(s,()=>.5).earned,0);assert.equal(E.advance(s,()=>.5).earned,500000);
+console.log('PASS: 資產守恆、六格時間結算、保障範圍、破產、退休、身故給付、失業恢復');
