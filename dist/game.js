@@ -26,3 +26,20 @@ const boardObserver=new MutationObserver(updatePawn);boardObserver.observe($('bo
 const messageObserver=new MutationObserver(()=>{if(!$('message').textContent)return;toast.textContent=$('message').textContent;toast.classList.add('visible');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>toast.classList.remove('visible'),4200);});messageObserver.observe($('message'),{childList:true,characterData:true,subtree:true});
 const eventObserver=new MutationObserver(()=>{const icon=$('event-card').querySelector('.event-icon');if(icon&&latest)icon.textContent=icons[latest.cat]||'🎲';$('event-card').style.animation='none';requestAnimationFrame(()=>$('event-card').style.animation='');});eventObserver.observe($('event-card'),{childList:true});if(latest){const icon=$('event-card').querySelector('.event-icon');if(icon)icon.textContent=icons[latest.cat]||'🎲';}
 const originalRoll=$('roll').onclick;let rolling=false;$('roll').onclick=async()=>{if(rolling||!state||state.ended||state.remaining)return;rolling=true;$('roll').disabled=true;$('dice').classList.add('rolling');const flash=setInterval(()=>$('dice').textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][Math.floor(Math.random()*6)],75);await new Promise(resolve=>setTimeout(resolve,550));clearInterval(flash);$('dice').classList.remove('rolling');originalRoll();$('roll').disabled=false;rolling=false;};
+
+// Fit the board to the available stage, including its raised pawn and shadow.
+const boardViewport=document.createElement('div');boardViewport.className='board-viewport';
+$('board').before(boardViewport);boardViewport.append($('board'));
+const resizeBoard=new ResizeObserver(entries=>{const {width,height}=entries[0].contentRect;const scale=Math.max(.1,Math.min((width-28)/600,(height-36)/600,1.3));$('board').style.setProperty('--board-scale',scale);});
+resizeBoard.observe(boardViewport);
+const actionDock=document.createElement('div');actionDock.className='action-dock';document.querySelector('.play-panel').append(actionDock);
+const compactActions=matchMedia('(max-width:760px), (max-height:550px)');
+function placeActions(){const parent=compactActions.matches?actionDock:document.querySelector('.board-center');if(compactActions.matches){parent.append($('roll'),$('travel-controls'));}else{parent.insertBefore($('roll'),parent.querySelector('.board-foot'));parent.insertBefore($('travel-controls'),parent.querySelector('.board-foot'));}}
+compactActions.addEventListener('change',placeActions);placeActions();
+const eventPanel=document.createElement('div');eventPanel.className='event-panel';$('event-card').before(eventPanel);eventPanel.append($('event-card'));
+const eventDetails=document.createElement('button');eventDetails.className='event-details';eventDetails.textContent='展開事件與學習回饋 ↗';eventPanel.append(eventDetails);
+const eventDialog=document.createElement('dialog');eventDialog.id='event-dialog';eventDialog.setAttribute('aria-label','事件詳情');eventDialog.innerHTML='<div class="report-top"><span class="eyebrow">EVENT DETAILS</span><button class="text-btn">關閉 ✕</button></div><div class="event-card"></div>';document.body.append(eventDialog);
+eventDialog.querySelector('button').onclick=()=>eventDialog.close();
+function syncEventDetails(){eventDialog.querySelector('.event-card').innerHTML=$('event-card').innerHTML;}
+eventDetails.onclick=()=>{pause();syncEventDetails();eventDialog.showModal();};
+new MutationObserver(()=>{if(eventDialog.open)syncEventDetails();}).observe($('event-card'),{childList:true});
