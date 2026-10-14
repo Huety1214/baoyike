@@ -5,3 +5,5 @@ game-mobile.png
 *.tar.gz
 *.tgz
 .playwright-mcp/
+__pycache__/
+*.pyc
