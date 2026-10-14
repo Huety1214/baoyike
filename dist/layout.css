@@ -1,0 +1,24 @@
+/* Journal / board / insurance, with no bottom toolbar or reserved footer row. */
+body{grid-template-rows:62px minmax(0,1fr)}
+main{padding-bottom:14px}
+.workspace{grid-template-columns:280px minmax(0,1fr) 318px;gap:16px}
+.journal-sidebar{grid-column:1;grid-row:1}
+.play-panel{grid-column:2;grid-row:1;grid-template-rows:38px minmax(0,1fr) 24px 20px}
+.workspace>.planning.docked-insurance{display:flex;grid-column:3;grid-row:1;position:relative;inset:auto;width:auto;height:100%;max-height:none;min-height:0;border:2px solid #cbd9ba;border-radius:20px;padding:17px;box-shadow:0 5px 0 #d8dfbf;background:#fffaf0;overflow:hidden;z-index:auto}
+.docked-insurance .section-top h2{font-size:16px}.docked-insurance .section-top{margin-bottom:12px;padding-bottom:12px}.docked-insurance .close-panel{display:none}
+.docked-insurance .tab-panel{flex:1;overflow:auto;min-height:0;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#c7d4b4 transparent}
+.play-panel>.section-top{height:38px;justify-content:space-between;gap:8px;margin:0;padding:0 6px}
+.play-panel>.section-top>div:first-child{display:none}.play-panel>.section-top>.subtle{font-size:9px;white-space:nowrap}
+.game-menu{display:flex;align-items:center;justify-content:flex-end;gap:5px}
+.game-menu button{display:flex;align-items:center;gap:4px;min-height:28px;border:1px solid #d4ddc1;border-radius:9px;background:#f6f6e9;color:#84926b;padding:5px 8px;box-shadow:0 2px 0 #dce3c9;font-size:10px;font-weight:600;white-space:nowrap}
+.game-menu #open-log{background:#f8edcf;border-color:#e8d9ae;color:#9b8553}.game-menu #game-report{background:#e0edf0;border-color:#ccdee2;color:#72949c}.game-menu .tool-icon{font-size:12px}.game-menu #fullscreen .tool-label{display:none}
+.game-menu #open-right-log,.game-menu #open-pack{display:none}
+.toast{bottom:18px}
+#macro-dialog{width:370px;padding:0;border:0;background:transparent;box-shadow:none;overflow:visible;max-height:calc(100dvh - 36px)}
+#macro-dialog>.left-sidebar{display:flex;width:100%;height:auto;max-height:calc(100dvh - 36px);min-height:0;position:relative;inset:auto;margin:0;padding:21px;overflow:hidden;box-shadow:0 5px 0 #bbc9a7}
+#macro-dialog .left-content{min-height:0;overflow:auto;overscroll-behavior:contain}
+#macro-dialog #close-left{display:block}
+@media(max-width:1200px) and (min-width:901px){.workspace{grid-template-columns:242px minmax(0,1fr) 282px;gap:11px}.workspace>.planning.docked-insurance{padding:13px}.play-panel>.section-top{padding:0 3px}.play-panel>.section-top>.subtle{font-size:8px}.game-menu button{font-size:9px;padding:5px 7px}}
+@media(max-width:900px){body{grid-template-rows:52px minmax(0,1fr)}main{padding-bottom:10px}.workspace{display:block}.journal-sidebar,.workspace>.planning.docked-insurance{display:none}.play-panel{height:100%;display:grid;grid-template-rows:40px minmax(0,1fr) 22px 48px 18px}.play-panel>.section-top{height:40px;padding:0 4px}.play-panel>.section-top>.subtle{font-size:8px}.game-menu{gap:5px}.game-menu button{font-size:9px;padding:6px 8px;min-height:29px}.game-menu #open-right-log,.game-menu #open-pack{display:flex}.game-menu #fullscreen{display:none}.journal-sidebar.mobile-open{display:flex;position:fixed;left:10px;right:10px;top:64px;bottom:12px;height:auto;margin:0;max-width:450px;z-index:50}.workspace>.planning.docked-insurance.open{display:flex;position:fixed;left:10px;right:10px;top:64px;bottom:12px;width:auto;height:auto;margin-left:auto;max-width:460px;padding:18px;z-index:50;box-shadow:0 5px 0 #bbc9a7,0 0 0 100vmax #86957a80}.docked-insurance.open .close-panel{display:block}.toast{bottom:16px}#macro-dialog>.left-sidebar{max-width:none}}
+@media(max-width:400px){.play-panel>.section-top{padding:0;gap:4px}.play-panel>.section-top>.subtle{font-size:7px}.game-menu{gap:4px}.game-menu button{font-size:9px;padding:6px}.game-menu .tool-icon{font-size:11px}}
+@media(min-width:761px) and (max-height:550px){body{grid-template-rows:42px minmax(0,1fr)}main{padding-bottom:9px}.workspace{display:block}.journal-sidebar,.workspace>.planning.docked-insurance{display:none}.play-panel{grid-template-rows:32px minmax(0,1fr) 18px 40px}.play-panel>.section-top{height:32px}.game-menu #open-right-log,.game-menu #open-pack{display:flex}.game-menu #fullscreen{display:none}.journal-sidebar.mobile-open{display:flex;position:fixed;left:10px;right:10px;top:50px;bottom:9px;height:auto;margin:0;max-width:360px;z-index:50}.workspace>.planning.docked-insurance.open{display:flex;position:fixed;top:50px;bottom:9px;right:10px;left:auto;width:370px;height:auto;margin:0;max-width:calc(100vw - 20px);z-index:50;box-shadow:0 5px 0 #bbc9a7,0 0 0 100vmax #86957a80}.docked-insurance.open .close-panel{display:block}}

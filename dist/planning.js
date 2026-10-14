@@ -1,11 +1,11 @@
 'use strict';
-// Three columns: economy, board and journal. Insurance opens as a game panel.
+// Three columns: journal, board and insurance. Economy lives in a small modal.
 const leftSidebar=document.createElement('aside');leftSidebar.className='left-sidebar';leftSidebar.setAttribute('aria-label','總體經濟');
 leftSidebar.innerHTML='<div class="sidebar-title"><div><span class="eyebrow">🌤 世界近況</span><h2>總體經濟</h2></div><button id="close-left" class="close-panel">關閉 ✕</button></div><div class="left-content"><section id="left-macro"><div id="macro-content"></div></section></div>';
 const rightSidebar=document.createElement('aside');rightSidebar.className='right-sidebar';rightSidebar.setAttribute('aria-label','遊戲紀錄');
 rightSidebar.innerHTML='<div class="sidebar-title"><div><span class="eyebrow">📖 冒險手帳</span><h2>遊戲紀錄</h2></div><button id="close-right" class="close-panel">關閉 ✕</button></div><p class="journal-intro">每一步，都是你的人生故事。</p><div class="journal-content"></div>';
-const workspace=document.querySelector('.workspace');workspace.prepend(leftSidebar);workspace.append(rightSidebar);rightSidebar.querySelector('.journal-content').append($('history'));
-document.body.append(pack);
+const workspace=document.querySelector('.workspace');workspace.prepend(rightSidebar);workspace.append(pack);pack.classList.add('docked-insurance');rightSidebar.classList.add('journal-sidebar');rightSidebar.querySelector('.journal-content').append($('history'));
+const macroDialog=document.createElement('dialog');macroDialog.id='macro-dialog';macroDialog.setAttribute('aria-label','總體經濟');macroDialog.append(leftSidebar);document.body.append(macroDialog);
 document.querySelector('.history-head').hidden=true;
 document.querySelector('[data-tab=insurance]').click();
 document.querySelector('.planning .eyebrow').textContent='🛡 安心小屋';document.querySelector('.planning h2').textContent='保險與生活規劃';
@@ -16,9 +16,14 @@ const policyHost=document.createElement('section');policyHost.id='investment-pol
 $('open-pack').querySelector('.tool-label').textContent='保險規劃';$('open-pack').querySelector('.tool-icon').textContent='🛡';
 $('open-log').querySelector('.tool-label').textContent='總體經濟';$('open-log').querySelector('.tool-icon').textContent='🌤';
 const extraLog=document.createElement('button');extraLog.id='open-right-log';extraLog.innerHTML='<span class="tool-icon">📖</span><span class="tool-label">遊戲紀錄</span>';document.querySelector('.game-toolbar').insertBefore(extraLog,$('game-report'));
-function closeSidebars(){leftSidebar.classList.remove('mobile-open');rightSidebar.classList.remove('mobile-open');$('open-log').setAttribute('aria-expanded','false');$('open-right-log').setAttribute('aria-expanded','false');}
-function openSidebar(side){pause();togglePack(false);closeSidebars();side.classList.add('mobile-open');$(side===leftSidebar?'open-log':'open-right-log').setAttribute('aria-expanded','true');}
+function closeSidebars(){rightSidebar.classList.remove('mobile-open');if(macroDialog.open)macroDialog.close();$('open-log').setAttribute('aria-expanded','false');$('open-right-log').setAttribute('aria-expanded','false');}
+function openSidebar(side){pause();togglePack(false);closeSidebars();if(side===leftSidebar){macroDialog.showModal();$('open-log').setAttribute('aria-expanded','true');}else{rightSidebar.classList.add('mobile-open');$('open-right-log').setAttribute('aria-expanded','true');}}
 $('open-log').onclick=()=>openSidebar(leftSidebar);$('open-right-log').onclick=()=>openSidebar(rightSidebar);$('close-left').onclick=closeSidebars;$('close-right').onclick=closeSidebars;
+const gameMenu=document.createElement('nav');gameMenu.className='game-menu';gameMenu.setAttribute('aria-label','遊戲工具');
+gameMenu.append($('open-log'),$('game-report'),$('fullscreen'),$('open-right-log'),$('open-pack'));
+document.querySelector('.play-panel>.section-top').append(gameMenu);toolbar.remove();
+$('open-log').querySelector('.tool-label').textContent='總經';$('game-report').querySelector('.tool-label').textContent='回顧';$('open-right-log').querySelector('.tool-label').textContent='紀錄';$('open-pack').querySelector('.tool-label').textContent='保險';
+macroDialog.addEventListener('close',()=>$('open-log').setAttribute('aria-expanded','false'));
 const priorPack=$('open-pack').onclick;$('open-pack').onclick=()=>{closeSidebars();priorPack();};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSidebars();});
 document.addEventListener('focusin',e=>{if(e.target.matches('input,select'))pause();});
