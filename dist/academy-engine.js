@@ -37,6 +37,70 @@
   ];
   const categories = { risk: '風險事件', market: '市場事件', life: '人生事件', contract: '契約事件' };
   const priorities = { family: '家庭保障', medical: '醫療風險', liquidity: '緊急預備金', accident: '工作意外', retirement: '退休現金流' };
+  const judgments = {
+    debt: '先確認還款後，每年還能留多少現金。',
+    reserve: '應先預留半年收入中斷時的生活費。',
+    care: '家人仰賴這份收入，應先估算扶養支出。',
+    treatment: '應先確認醫療費用中需要自付的部分。',
+    future: '應先核對退休後的固定收入與生活費。'
+  };
+  // The contract trigger stays explicit while the story and financial shock belong to the client.
+  const roleCards = {
+    engineer: [
+      ['death', '房貸留給家人', '林先生因疾病身故。家人接手房貸，支付後事費用 10 萬元。'],
+      ['hospital', '膽結石手術', '林先生住院開刀，自費病房與手術費共 10 萬元。', { loss: 100000 }],
+      ['accident', '接孩子途中摔車', '騎車接孩子時擦撞受傷，意外門診花了 6 萬元。', { loss: 60000 }],
+      ['bear', '科技股回檔', '持有的股票與連動帳戶下跌 20%。', { market: -.2 }],
+      ['inflation', '家庭伙食漲價', '採買與外食變貴，家庭年生活費及退休支出目標提高 5%。', { inflation: .05 }],
+      ['baby', '接父親同住', '家中新增一位扶養對象，每年多支出 6 萬元。', { dependentsDelta: 1, expenseDelta: 60000 }],
+      ['raise', '接任研發組長', '帶領新專案後，下一年度起薪資增加 10%。', { incomeMultiplier: 1.1 }],
+      ['outpatient', '手腕肌腱炎', '因反覆打字接受疾病門診治療，自費 1.2 萬元。', { loss: 12000 }],
+      ['review', '房貸週年盤點', '收到房貸年度對帳單，核對剩餘負債與既有身故保障。']
+    ],
+    doctor: [
+      ['death', '家庭失去主要收入', '陳醫師因疾病身故。家屬支付後事費用 10 萬元，仍須負擔房貸與兩個孩子的生活費。'],
+      ['hospital', '急性闌尾炎住院', '陳醫師住院手術，自費醫療共 14 萬元。', { loss: 140000 }],
+      ['accident', '夜班後的車禍', '下班途中發生事故，門診處置及後續治療共 7 萬元。', { loss: 70000 }],
+      ['bull', '基金部位上漲', '一般投資與連動帳戶本年上漲 9%。', { market: .09 }],
+      ['bear', '海外投資回落', '持有的投資與連動帳戶回落 15%。', { market: -.15 }],
+      ['baby', '母親搬來同住', '家庭新增一位扶養對象，往後每年照顧支出增加 12 萬元。', { dependentsDelta: 1, expenseDelta: 120000 }],
+      ['raise', '增開專科門診', '調整門診時段，下一年度起收入提高 8%。', { incomeMultiplier: 1.08 }],
+      ['outpatient', '聲帶發炎回診', '長時間看診後聲帶發炎，自費門診 1.8 萬元。', { loss: 18000 }],
+      ['review', '核對家庭保單', '夫妻整理房貸及兩個孩子的開支，核對保單受益安排。']
+    ],
+    teacher: [
+      ['death', '配偶接手家庭帳務', '王老師因疾病身故，家屬支付後事費用 10 萬元，往後以家庭現有資源支應生活。'],
+      ['hospital', '膝關節住院手術', '王老師因退化性關節問題住院，醫療支出共 12 萬元。', { loss: 120000 }],
+      ['accident', '雨天在校門口跌倒', '在濕滑地面跌傷，意外門診與治療共 3 萬元。', { loss: 30000 }],
+      ['inflation', '退休生活預算上修', '日常物價上升，生活費與退休支出目標增加 4%。', { inflation: .04 }],
+      ['bear', '退休投資遇到回檔', '投資與連動帳戶本年下跌 8%。', { market: -.08 }],
+      ['baby', '開始照顧長輩', '母親搬來同住，增加一位扶養對象，每年多支出 9 萬元。', { dependentsDelta: 1, expenseDelta: 90000 }],
+      ['raise', '承接夜間授課', '固定兼課帶來額外收入，下一年度起年收入提高 6%。', { incomeMultiplier: 1.06 }],
+      ['outpatient', '喉部疾病門診', '因聲音沙啞定期回診，自費治療 8,000 元。', { loss: 8000 }],
+      ['review', '退休前查核年金', '收到年金帳戶明細，核對已投入金額與預計給付方式。']
+    ],
+    technician: [
+      ['death', '扶養者的收入中斷', '張小姐因疾病身故。家人支付後事費用 10 萬元，也失去原本仰賴的工作收入。'],
+      ['hospital', '肺炎住院', '張小姐因肺炎住院，自費醫療支出 7 萬元。', { loss: 70000 }],
+      ['disability', '設備維修事故', '工作意外造成失能，復健照護花費 40 萬元，往後工作收入減少 30%。', { loss: 400000 }],
+      ['inflation', '租金與生活費上漲', '租約更新，生活費與退休支出目標提高 6%。', { inflation: .06 }],
+      ['bull', '定期投資回升', '一般投資與連動帳戶上漲 7%。', { market: .07 }],
+      ['layoff', '合約之間的空窗', '上一份維修合約結束，半年沒有新案，本年度少了半年工作收入。'],
+      ['raise', '取得設備專修資格', '取得新資格後調薪，下一年度起年收入提高 12%。', { incomeMultiplier: 1.12 }],
+      ['outpatient', '慢性腰痛回診', '因慢性腰痛接受門診治療，支出 1 萬元，無意外事故或住院。', { loss: 10000 }],
+      ['review', '接案前核對保障', '將新案的工作內容與意外險條款逐項核對。']
+    ]
+  };
+  const deckFor = roleId => roleCards[roleId].map(([base, title, description, effects]) => {
+    const template = events.find(e => e.id === base);
+    return { ...template, ...effects, id: roleId + '-' + base, title, subtitle: title, description };
+  });
+  const householdEvents = [
+    { id: 'family-repair', category: 'life', title: '家中修繕', subtitle: '修繕支出', description: '家屬支付修繕費 3 萬元。', loss: 30000, icon: '⌂' },
+    { id: 'family-leak', category: 'risk', title: '漏水損失', subtitle: '財物損壞', description: '家庭財物損壞，支出 2 萬元。', loss: 20000, icon: '◇' },
+    ...events.filter(e => ['bear', 'bull', 'review'].includes(e.id))
+  ];
+  const tileCategory = position => ['life', 'risk', 'market', 'contract'][position % 4];
   function emptyPolicies() { return Object.fromEntries(products.map(p => [p.id, 0])); }
   function premium(s) { return products.reduce((n, p) => n + p.premium * s.policies[p.id], 0); }
   function debtPayment(s) { return Math.min(s.debtService, s.debt * 1.02); }
@@ -56,11 +120,11 @@
   }
   function metrics(s) { return { flow: flow(s), net: net(s), gap: gap(s), need: need(s), coverage: coverage(s), reserve: reserveMonths(s), retirement: retirement(s), premium: premium(s) }; }
   function fresh(role) { return { ...clone(role), alive: true, policies: emptyPolicies(), investAccount: 0, annuityAccount: 0, premiumsPaid: 0, protectionCosts: 0, fees: 0, claims: 0, principalPaid: 0, insolvent: false, shortfall: 0 }; }
-  function create(roleId, selected = [], rationale = '') {
+  function create(roleId, selected = [], initialJudgments = []) {
     const role = roles.find(r => r.id === roleId);
     if (!role) throw new Error('未知角色');
     const baseline = fresh(role); baseline.existingLife = 0;
-    return { version: VERSION, roleId, round: 0, phase: 'planning', position: 0, dice: 1, client: fresh(role), baseline, selectedPriorities: [...new Set(selected)].filter(p => p in priorities).slice(0, 2), rationale: rationale.slice(0, 600), records: [], decisions: [], pending: null, answers: [], initialRole: clone(role), completed: false };
+    return { version: VERSION, roleId, round: 0, phase: 'planning', position: 0, dice: 1, client: fresh(role), baseline, selectedPriorities: [...new Set(selected)].filter(p => p in priorities).slice(0, 2), initialJudgments: [...new Set(Array.isArray(initialJudgments) ? initialJudgments : [])].filter(id => Object.hasOwn(judgments, id)), rationale: typeof initialJudgments === 'string' ? initialJudgments.slice(0, 600) : '', records: [], decisions: [], pending: null, answers: [], initialRole: clone(role), completed: false };
   }
   function setPolicy(game, id, units) {
     if (game.phase !== 'planning') throw new Error('事件與回饋階段已鎖定保單，下一回合才能調整。');
@@ -97,6 +161,9 @@
     s.claims += claim;
     return { claim, reason, policy };
   }
+  function claimEstimate(s, kind, loss) {
+    return payClaim(clone(s), { kind }, loss).claim;
+  }
   function year(s, e) {
     const before = { cash: s.cash, net: net(s) }, paid = premium(s);
     const income = s.alive ? s.income : 0;
@@ -126,26 +193,31 @@
     s.age++;
     return { before, after: { cash: s.cash, net: net(s) }, income, expense: s.expense, payment, interest, principal, paid, protection, fees: entry + accountFee, marketChange, loss, ...result, outOfPocket: loss - result.claim };
   }
-  const quiz = e => e.kind === 'hospital' ? { question: '這次疾病住院，哪一種給付判斷正確？', options: ['壽險因收入受影響而給付', '住院醫療依費用與契約上限給付', '意外險因事件突然發生而給付'], correct: 1, explanation: '疾病住院符合本遊戲健康險；「突然」不代表就是保險契約中的意外。' } : e.kind === 'outpatient' ? { question: '為什麼本次一般疾病門診沒有理賠？', options: ['沒住院、也不是意外，不符合條款', '只要有健康險就應全部給付', '事後加保就能申請這次理賠'], correct: 0, explanation: '先檢查保障範圍與給付條件，不能事後加保追溯事故。' } : e.category === 'market' ? { question: '投資型保單遇到市場下跌，哪個觀念正確？', options: ['有保險名稱就不會虧損', '所有跌幅由健康險補足', '帳戶價值會波動，仍須評估保障與流動性'], correct: 2, explanation: '投資風險與保險保障分別計算；投資型不保證帳戶價值。' } : e.id === 'baby' ? { question: '新增扶養責任後，應先做什麼？', options: ['重新估算保障缺口與保費負擔', '直接買滿所有商品', '只增加投資型保險'], correct: 0, explanation: '需求改變，先重新分析家庭支出、負債、既有保障與預算。' } : { question: '評估這次規劃，哪個標準最合理？', options: ['理賠領得最多就最高分', '期末資產最高就最高分', '按需求、負擔與固定壓力測試評估'], correct: 2, explanation: '學習表現看決策品質，不靠抽到多少事故；沒有理賠也可以是合理規劃。' };
+  const quiz = e => e.kind === 'hospital' ? { question: '這次疾病住院，哪一種給付判斷正確？', options: ['壽險因收入受影響而給付', '住院醫療依費用與契約上限給付', '意外險因事件突然發生而給付'], correct: 1, explanation: '疾病住院符合本遊戲健康險；「突然」不代表就是保險契約中的意外。' } : e.kind === 'outpatient' ? { question: '為什麼本次一般疾病門診沒有理賠？', options: ['沒住院、也不是意外，不符合條款', '只要有健康險就應全部給付', '事後加保就能申請這次理賠'], correct: 0, explanation: '先檢查保障範圍與給付條件，不能事後加保追溯事故。' } : e.category === 'market' ? { question: '投資型保單遇到市場下跌，哪個觀念正確？', options: ['有保險名稱就不會虧損', '所有跌幅由健康險補足', '帳戶價值會波動，仍須評估保障與流動性'], correct: 2, explanation: '投資風險與保險保障分別計算；投資型不保證帳戶價值。' } : e.dependentsDelta > 0 ? { question: '新增扶養責任後，應先做什麼？', options: ['重新估算保障缺口與保費負擔', '直接買滿所有商品', '只增加投資型保險'], correct: 0, explanation: '需求改變，先重新分析家庭支出、負債、既有保障與預算。' } : { question: '評估這次規劃，哪個標準最合理？', options: ['理賠領得最多就最高分', '期末資產最高就最高分', '按需求、負擔與固定壓力測試評估'], correct: 2, explanation: '學習表現看決策品質，不靠抽到多少事故；沒有理賠也可以是合理規劃。' };
   function roll(game, die, forcedEvent) {
     if (game.phase !== 'planning' || game.round >= 6) throw new Error('目前無法擲骰');
     if (!Number.isInteger(die) || die < 1 || die > 6) throw new Error('骰子必須為 1–6');
-    game.dice = die; game.position = (game.position + die) % 20;
-    const scheduled = { 0: 'hospital', 2: 'baby', 4: 'bear' };
+    const position = (game.position + die) % 20;
+    const category = tileCategory(position);
     let event;
-    if (forcedEvent) { event = events.find(e => e.id === forcedEvent); if (!event) throw new Error('未知事件'); }
-    else if (scheduled[game.round] && game.client.alive) event = events.find(e => e.id === scheduled[game.round]);
-    else {
-      const category = ['life', 'risk', 'market', 'contract'][game.position % 4];
-      const used = game.records.map(r => r.event.id);
-      let pool = events.filter(e => e.category === category && (!used.includes(e.id)) && (game.client.alive || !['death', 'disability', 'raise', 'layoff', 'baby'].includes(e.id)));
-      if (!pool.length) pool = events.filter(e => e.category === category && !['death', 'disability', 'raise', 'layoff', 'baby'].includes(e.id));
-      event = pool[(die - 1) % pool.length];
+    if (forcedEvent) {
+      event = [...deckFor(game.roleId), ...events].find(e => e.id === forcedEvent);
+      if (!event) throw new Error('未知事件');
+    } else {
+      // Existing saves can already be in the surviving household phase.
+      const deck = game.client.alive ? deckFor(game.roleId) : householdEvents;
+      const cards = deck.filter(e => e.category === category);
+      const seen = new Set(game.records.map(r => r.event.id));
+      const unseen = cards.filter(e => !seen.has(e.id));
+      const pool = unseen.length ? unseen : cards;
+      event = pool[Math.floor(Math.random() * pool.length)];
     }
+    game.dice = die;
+    game.position = position;
     const snapshot = clone(game.client.policies), decisionMetrics = metrics(game.client);
     const actual = year(game.client, event), baseline = year(game.baseline, event);
     game.round++; game.phase = 'event';
-    game.pending = { round: game.round, die, position: game.position, event: clone(event), actual, baseline, policies: snapshot, metricsBefore: decisionMetrics, metricsAfter: metrics(game.client), quiz: quiz(event), teaching: Boolean(forcedEvent), scheduled: !forcedEvent && Boolean(scheduled[game.round - 1]) };
+    game.pending = { round: game.round, die, position: game.position, event: clone(event), actual, baseline, policies: snapshot, metricsBefore: decisionMetrics, metricsAfter: metrics(game.client), quiz: quiz(event), teaching: Boolean(forcedEvent) };
     game.records.push(clone(game.pending));
     return game.pending;
   }
@@ -156,9 +228,9 @@
     game.answers.push(result); game.phase = 'feedback'; return result;
   }
   function next(game) {
-    if (game.phase !== 'feedback') throw new Error('請先完成契約觀念題');
+    if (!['event', 'feedback'].includes(game.phase)) throw new Error('請先結算本回合');
     game.pending = null;
-    if (game.round === 6) { game.phase = 'retirement'; game.completed = true; }
+    if (game.round === 6) { game.phase = 'report'; game.completed = true; }
     else game.phase = 'planning';
   }
   function stress(s) {
@@ -203,5 +275,5 @@
       return g.version === VERSION && roles.some(r => r.id === g.roleId) && ['planning', 'event', 'feedback', 'retirement', 'report'].includes(g.phase) && Number.isInteger(g.round) && g.round >= 0 && g.round <= 6 && Array.isArray(g.records) && g.records.length === g.round && Array.isArray(g.answers) && Array.isArray(g.decisions) && Array.isArray(g.selectedPriorities) && [g.client, g.baseline].every(s => s && ['cash','debt','income','expense','investments','investAccount','annuityAccount'].every(k => Number.isFinite(s[k])) && products.every(p => Number.isInteger(s.policies[p.id]) && s.policies[p.id] >= 0 && s.policies[p.id] <= p.max)) && (!(g.phase === 'event' || g.phase === 'feedback') || !!g.pending);
     } catch { return false; }
   }
-  return { VERSION, roles, products, events, categories, priorities, create, setPolicy, roll, answer, next, metrics, premium, flow, net, need, gap, coverage, reserveMonths, retirement, stress, score, feedback, validSave };
+  return { VERSION, roles, products, events, deckFor, tileCategory, categories, priorities, judgments, create, setPolicy, roll, answer, next, claimEstimate, metrics, premium, flow, net, need, gap, coverage, reserveMonths, retirement, stress, score, feedback, validSave };
 });

@@ -12,3 +12,40 @@ dialog{border:1px solid var(--border);border-radius:23px;padding:0;width:min(720
 @media(max-width:1160px){main{padding:25px 22px}.workspace{grid-template-columns:210px minmax(360px,1fr);gap:17px}.right-column{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:17px}.journal-panel{margin:0}.board{grid-template-rows:repeat(6,69px)}.app-header{padding:0 25px}.chapter-pills span{padding:7px 10px;font-size:10px}.role-grid{gap:10px}.role-card{padding:17px}.role-card.selected{padding:16px}}
 @media(max-width:760px){.app-header{height:74px;padding:0 17px}.brand-mark{width:35px;height:38px;font-size:19px}.brand-name{font-size:18px}.brand-name small{font-size:7px}.app-header nav{gap:13px;margin-left:auto;margin-right:15px}.nav-btn{font-size:10px}.header-end{gap:8px}.version-tag{display:none}main{padding:22px 15px}.page-heading{align-items:flex-start;gap:15px;flex-direction:column}.page-heading h1{font-size:24px}.chapter-pills{width:100%;justify-content:space-between}.workspace{display:flex;flex-direction:column;gap:16px}.left-column,.center-column,.right-column{width:100%}.client-panel{display:grid;grid-template-columns:1fr 1.2fr}.client-intro{padding:15px;border-bottom:0;border-right:1px solid var(--border)}.client-intro .avatar{width:40px;height:40px;font-size:22px;margin:9px 0}.client-intro h2{font-size:17px}.client-intro h2 small{font-size:10px}.client-data{padding:10px 14px}.client-data .data-row{font-size:10px;margin:7px 0}.client-data .divider,.client-data .priority-box,.client-data .secondary{display:none}.client-data .small-link{font-size:10px;margin-top:8px}.metrics-grid{margin-top:0}.metric{padding:12px 10px}.metric strong{font-size:19px}.metric small{font-size:8px}.board-panel{padding:17px 13px}.board{grid-template-rows:repeat(6,57px);gap:5px}.tile{border-radius:9px}.tile>span{font-size:21px}.tile small{font-size:7px}.board-center{padding:5px}.board-center h2{font-size:23px}.board-center p{font-size:9px}.board-center .chapter-note{font-size:8px}.dice{font-size:40px;margin:7px 0}.board-center .primary{padding:9px 12px;font-size:10px}.board-center .board-hint{font-size:7px;margin-top:6px}.legend{gap:11px;font-size:8px}.right-column{display:flex;flex-direction:column;gap:16px}.coach-panel,.journal-panel{width:100%}.coach-hero{margin-top:12px;padding:14px}.coach-hero h3{display:inline;font-size:12px}.coach-hero:before{display:none}.coach-hero p{margin-top:7px}.bottom-note{font-size:8px}footer{padding:20px;flex-direction:column;gap:6px;font-size:8px}.role-grid{grid-template-columns:1fr 1fr}.role-card{padding:17px}.role-card.selected{padding:16px}.role-card h3{font-size:16px}.role-card .avatar{width:42px;height:42px;margin-bottom:12px}.role-card .tagline{font-size:10px}.role-card .role-detail{font-size:9px}.role-card .data-row{font-size:9px}.analysis-panel{grid-template-columns:1fr;gap:22px;padding:20px}.onboarding-head{margin:12px 0 25px}.onboarding-head h1{font-size:29px}.onboarding-head p{font-size:11px}.steps-inline{gap:15px;font-size:9px}.start-bar{flex-direction:column-reverse;align-items:stretch}.start-bar p{text-align:center}.modal-body{padding:22px 18px}.modal-top h2{font-size:21px}.ledger{gap:7px}.ledger article{padding:12px 8px}.ledger strong{font-size:18px}.ledger small{font-size:8px}.compare-box{padding:13px}.compare-box strong{font-size:21px}.event-description{font-size:12px}.explanation,.quiz-option,.coach-lines li{font-size:11px}.report-grid{grid-template-columns:1fr}.score-number{font-size:75px}.score-items{margin-top:20px}.stress-grid{grid-template-columns:1fr}.retire-panel{padding:20px 15px}.retire-panel .compare-box{padding:15px}.retire-panel .compare-grid strong{font-size:26px}.retire-panel .data-row{font-size:10px}.report-heading h1,.retire-intro h1{font-size:27px}.route-strip{gap:4px;font-size:8px}.route-strip span{padding:7px 10px}.report-actions{flex-wrap:wrap}.event-library{grid-template-columns:1fr}.resume-banner{font-size:11px;padding:12px}.product{grid-template-columns:31px minmax(0,1fr) auto;gap:7px}.product h3{font-size:11px}.product h3 small{font-size:8px;margin-left:3px}.product p{font-size:8px}.stepper{gap:7px}.stepper button{width:24px;height:25px}.product-icon{width:30px;font-size:18px}.product-bottom strong{font-size:9px}.budget-line{font-size:9px}.onboarding .intro-badge{font-size:8px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.setup-heading,.client-summary,.play-toolbar,.risk-case h3 {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.setup-heading { margin:14px 0 22px }
+.setup-heading h1 { font-size:28px }
+.setup-heading span,.client-summary small,.risk-case small { font-weight:400; color:var(--muted); font-size:12px }
+.start-bar { justify-content:flex-end; gap:10px }
+.judgment-list { display:grid; gap:5px }
+.judgment-list button { text-align:left }
+.workspace { grid-template-columns:minmax(0, 1fr) minmax(235px, 300px); max-width:1160px; margin:auto }
+.play-toolbar { max-width:1160px; margin:0 auto 18px; padding-bottom:14px; border-bottom:1px solid var(--border) }
+.client-summary { justify-content:flex-start; flex-wrap:wrap; gap:8px 14px }
+.client-summary h1 { font-size:21px }
+.client-summary small { margin-left:10px }
+.board { width:min(100%,650px); aspect-ratio:1; margin:auto; grid-template-rows:repeat(6,minmax(0,1fr)) }
+.board-center { gap:8px }
+.dice { font-size:clamp(48px,6vw,82px) }
+.right-column { display:flex; flex-direction:column; gap:14px; grid-column:auto }
+.journal-panel { margin:0 }
+.risk-panel { padding:20px }
+.risk-case { padding:10px 0; border-top:1px solid var(--border) }
+.risk-case h3 { font-size:13px }
+.risk-case .data-row { margin:3px 0 }
+.risk-meter { margin:9px 0; height:7px; border-radius:4px; background:var(--peach); overflow:hidden }
+.risk-meter i { display:block; height:100%; background:var(--green) }
+.quiz summary { cursor:pointer; font-weight:600 }
+@media(max-width:760px) {
+  .workspace { display:grid; grid-template-columns:minmax(0,1fr) }
+  .client-summary { gap:1px 8px }
+  .setup-heading h1 { font-size:23px }
+  .analysis-panel { grid-template-columns:1fr }
+  .board-center .dice { display:block }
+  .metric small { white-space:normal }
+  .start-bar { flex-direction:row }
+  .start-bar button { width:auto }
+}

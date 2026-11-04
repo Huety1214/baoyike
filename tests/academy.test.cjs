@@ -78,12 +78,62 @@ test('baseline keeps unspent premiums as cash through identical events', () => {
   assert.equal(g.pending.baseline.after.net - g.pending.actual.after.net, 24000);
 });
 
-test('mandatory rounds cover medicine, changed responsibility, and market shock', () => {
-  const g = newGame(); const actual = [];
-  for (let i = 0; i < 6; i++) { E.roll(g, 1); actual.push(g.pending.event.id); finishRound(g); }
-  assert.equal(actual[0], 'hospital'); assert.equal(actual[2], 'baby'); assert.equal(actual[4], 'bear');
-  assert.equal(g.client.age, 41); assert.equal(g.phase, 'retirement'); assert.equal(g.completed, true);
+test('landing category and independent card draw apply even on the first roll', t => {
+  const rng = t.mock.method(Math, 'random', () => 0);
+  for (const role of E.roles) {
+    const deck = E.deckFor(role.id);
+    for (const category of Object.keys(E.categories)) {
+      assert.ok(deck.filter(card => card.category === category).length >= 2);
+    }
+    const first = newGame(role.id), second = newGame(role.id);
+    rng.mock.mockImplementation(() => 0);
+    const a = E.roll(first, 2).event;
+    rng.mock.mockImplementation(() => 0.999);
+    const b = E.roll(second, 2).event;
+    assert.equal(a.category, 'market');
+    assert.equal(b.category, a.category);
+    assert.notEqual(a.id, b.id);
+    assert.ok(deck.some(card => card.id === a.id));
+    E.next(first);
+    assert.notEqual(E.roll(first, 4).event.id, a.id);
+  }
+});
+
+test('all choices survive saves and optional quizzes do not block the final report', () => {
+  const selected = Object.keys(E.judgments);
+  const g = E.create('teacher', ['retirement', 'medical'], selected);
+  for (let round = 1; round <= 6; round++) {
+    E.roll(g, 4);
+    E.next(g);
+  }
+  assert.equal(g.phase, 'report');
+  assert.equal(g.completed, true);
   assert.throws(() => E.roll(g, 1));
+  const saved = JSON.parse(JSON.stringify(g));
+  assert.ok(E.validSave(saved));
+  assert.deepEqual(saved.initialJudgments, selected);
+  assert.deepEqual(saved.selectedPriorities, ['retirement', 'medical']);
+});
+
+test('risk preview matches the settlement without charging the client', () => {
+  const g = newGame(); E.setPolicy(g, 'health', 1);
+  const before = JSON.stringify(g);
+  assert.equal(E.claimEstimate(g.client, 'hospital', 100000), 80000);
+  assert.equal(E.claimEstimate(g.client, 'accident', 60000), 0);
+  assert.equal(JSON.stringify(g), before);
+});
+
+test('pre-update household saves can land on every category and finish', () => {
+  const g = newGame(); E.roll(g, 1, 'death'); finishRound(g);
+  delete g.initialJudgments;
+  assert.ok(E.validSave(g));
+  for (let i = 0; i < 5; i++) {
+    const r = E.roll(g, 1);
+    assert.equal(r.event.category, E.tileCategory(g.position));
+    assert.equal(r.actual.income, 0);
+    E.next(g);
+  }
+  assert.equal(g.phase, 'report');
 });
 
 test('same decisions and answers receive same scores despite different event luck', () => {
