@@ -66,6 +66,22 @@ node --check dist/academy.js
 | `docs/v0-readme.md` | 原版說明與 VPS 部署資料 |
 | `deploy/` | 原 V0 VPS 設定，本次未操作 |
 
+## 自動部署（push to main → VPS）
+
+`main` 是部署分支。任何人 push 到 `main`，VPS 會在 **2 分鐘內**自動部署（systemd timer 輪詢）：
+
+1. `git fetch` 比對 `origin/main`
+2. 在獨立 worktree 檢出該 commit，跑 `python3 -m unittest` 與 `node --test`
+3. **測試全過才會** `git reset --hard` 到該 commit、重啟服務
+4. 健康檢查 `GET /health`；15 秒內沒起來就**自動回滾**到前一個 commit
+
+- 測試失敗 → 部署取消，線上維持舊版（log 會寫原因）
+- `.env`、`server.log` 等未追蹤檔不會被 reset 覆蓋
+- 部署 log：VPS `/home/llama/liferisk-deploy/deploy.log`
+- 想立刻部署：`systemctl --user start liferisk-deploy.service`（不必等 2 分鐘）
+
+> 因為 GitHub Actions 的 self-hosted runner 需要 repo admin 權限，這裡採 pull-based CD（VPS 主動拉），不需要對外開任何 inbound port。
+
 ## 範圍與限制
 
 每回合代表一年，六回合結算。未實作真實核保、等待期、完整商品費率、即時市場、多人競賽或完整數十年人生。
