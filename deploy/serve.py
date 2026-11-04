@@ -55,16 +55,30 @@ def validate_output(result, pool):
             allowed.remove(entry['evidenceId'])
     return result
 
+def text_content(content):
+    """Mistral 的 message.content 可能是字串或 chunk 陣列（thinking/text 交錯），只取 text chunk。"""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return ''.join(part['text'] for part in content
+                       if isinstance(part, dict) and part.get('type') == 'text' and isinstance(part.get('text'), str))
+    raise ValueError()
+
 def completion(data, key):
     base = os.environ.get('LLM_BASE_URL','https://api.mistral.ai/v1').rstrip('/')
     body = {'model':os.environ.get('LLM_MODEL','zai-glm-5-3-flash'),
             'messages':[{'role':'system','content':PROMPT},{'role':'user','content':json.dumps(data,ensure_ascii=False)}],
-            'response_format':{'type':'json_object'}, 'max_tokens':1600}
+            'response_format':{'type':'json_object'}, 'max_tokens':2000,
+            'reasoning_effort':os.environ.get('LLM_REASONING_EFFORT','low') or None}
+    if not body['reasoning_effort']:
+        del body['reasoning_effort']
     req = urllib.request.Request(base+'/chat/completions', data=json.dumps(body).encode(),
             headers={'Content-Type':'application/json','Authorization':'Bearer '+key})
     with urllib.request.urlopen(req,timeout=25) as response:
-        content = json.load(response)['choices'][0]['message']['content']
-    return validate_output(json.loads(content),data['candidates'])
+        choice = json.load(response)['choices'][0]
+    if choice.get('finish_reason') == 'length':
+        raise ValueError()
+    return validate_output(json.loads(text_content(choice['message']['content'])),data['candidates'])
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self,*args,**kwargs):

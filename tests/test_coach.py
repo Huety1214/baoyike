@@ -17,7 +17,12 @@ class Provider(BaseHTTPRequestHandler):
         result = {k:[{'evidenceId':f['id'],'insight':'核對本回合的保障與負擔。'} for f in items[:1]]
                   for k,items in context['candidates'].items()}
         if self.server.invalid: result['risks'][0]['evidenceId']='unknown'
-        raw = json.dumps({'choices':[{'message':{'content':json.dumps(result)}}]}).encode()
+        content = json.dumps(result)
+        if self.server.chunked:
+            content = [{'type':'thinking','thinking':[{'type':'text','text':'內部思考不該外流'}],'closed':True},
+                       {'type':'text','text':content}]
+        raw = json.dumps({'choices':[{'message':{'content':content},
+                                      'finish_reason':getattr(self.server,'finish','stop')}]}).encode()
         self.send_response(200); self.end_headers(); self.wfile.write(raw)
 
 
@@ -29,7 +34,7 @@ class CoachAPI(unittest.TestCase):
         return httpd
 
     def setUp(self):
-        self.up=self.server(Provider); self.up.invalid=False
+        self.up=self.server(Provider); self.up.invalid=False; self.up.chunked=False; self.up.finish='stop'
         self.app=self.server(serve.Handler)
         self.env=patch.dict(os.environ,{'LLM_BASE_URL':f'http://127.0.0.1:{self.up.server_port}/v1',
                'LLM_MODEL':'zai-glm-5-3-flash','LLM_API_KEY':'test-only'}); self.env.start(); self.addCleanup(self.env.stop)
@@ -50,6 +55,17 @@ class CoachAPI(unittest.TestCase):
             self.assertEqual(payload['model'],'zai-glm-5-3-flash')
             self.assertEqual(payload['response_format'],{'type':'json_object'})
             self.assertEqual(bool(result['strengths']),stage=='final')
+
+    def test_chunked_content_is_concatenated(self):
+        self.up.chunked=True
+        result=self.call('round')
+        self.assertTrue(result['risks'])
+        self.assertNotIn('內部思考', json.dumps(result,ensure_ascii=False))
+
+    def test_truncated_completion_is_rejected(self):
+        self.up.finish='length'
+        with self.assertRaises(urllib.error.HTTPError) as err: self.call('round')
+        self.assertEqual(err.exception.code,502)
 
     def test_invalid_evidence_and_missing_key(self):
         self.up.invalid=True
