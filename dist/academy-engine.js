@@ -123,8 +123,8 @@
   function create(roleId, selected = [], initialJudgments = []) {
     const role = roles.find(r => r.id === roleId);
     if (!role) throw new Error('未知角色');
-    const baseline = fresh(role); baseline.existingLife = 0;
-    return { version: VERSION, roleId, round: 0, phase: 'planning', position: 0, dice: 1, client: fresh(role), baseline, selectedPriorities: [...new Set(selected)].filter(p => p in priorities).slice(0, 2), initialJudgments: [...new Set(Array.isArray(initialJudgments) ? initialJudgments : [])].filter(id => Object.hasOwn(judgments, id)), rationale: typeof initialJudgments === 'string' ? initialJudgments.slice(0, 600) : '', records: [], decisions: [], pending: null, answers: [], initialRole: clone(role), completed: false };
+    const baseline = fresh(role);
+    return { version: VERSION, comparisonVersion: 2, evidence: [], assessment: {}, roleId, round: 0, phase: 'planning', position: 0, dice: 1, client: fresh(role), baseline, selectedPriorities: [...new Set(selected)].filter(p => p in priorities).slice(0, 2), initialJudgments: [...new Set(Array.isArray(initialJudgments) ? initialJudgments : [])].filter(id => Object.hasOwn(judgments, id)), rationale: typeof initialJudgments === 'string' ? initialJudgments.slice(0, 600) : '', records: [], decisions: [], pending: null, answers: [], initialRole: clone(role), completed: false };
   }
   function setPolicy(game, id, units) {
     if (game.phase !== 'planning') throw new Error('事件與回饋階段已鎖定保單，下一回合才能調整。');
@@ -184,6 +184,7 @@
     s.investments = round(s.investments * (1 + market)); s.investAccount = round(s.investAccount * (1 + market));
     let loss = e.loss || 0;
     if (e.kind === 'layoff') loss = round(income * .5);
+    const beforeEventCash = s.cash;
     const result = payClaim(s, e, loss);
     fund(s, loss - result.claim);
     if (e.kind === 'disability' && s.alive) s.income = round(s.income * .7);
@@ -191,9 +192,43 @@
     s.expense += e.expenseDelta || 0; s.dependents += e.dependentsDelta || 0;
     if (e.incomeMultiplier && s.alive) s.income = round(s.income * e.incomeMultiplier);
     s.age++;
-    return { before, after: { cash: s.cash, net: net(s) }, income, expense: s.expense, payment, interest, principal, paid, protection, fees: entry + accountFee, marketChange, loss, ...result, outOfPocket: loss - result.claim };
+    return { before, beforeEventCash, after: { cash: s.cash, net: net(s) }, income, expense: s.expense, payment, interest, principal, paid, protection, fees: entry + accountFee, marketChange, loss, ...result, outOfPocket: loss - result.claim };
   }
-  const quiz = e => e.kind === 'hospital' ? { question: '這次疾病住院，哪一種給付判斷正確？', options: ['壽險因收入受影響而給付', '住院醫療依費用與契約上限給付', '意外險因事件突然發生而給付'], correct: 1, explanation: '疾病住院符合本遊戲健康險；「突然」不代表就是保險契約中的意外。' } : e.kind === 'outpatient' ? { question: '為什麼本次一般疾病門診沒有理賠？', options: ['沒住院、也不是意外，不符合條款', '只要有健康險就應全部給付', '事後加保就能申請這次理賠'], correct: 0, explanation: '先檢查保障範圍與給付條件，不能事後加保追溯事故。' } : e.category === 'market' ? { question: '投資型保單遇到市場下跌，哪個觀念正確？', options: ['有保險名稱就不會虧損', '所有跌幅由健康險補足', '帳戶價值會波動，仍須評估保障與流動性'], correct: 2, explanation: '投資風險與保險保障分別計算；投資型不保證帳戶價值。' } : e.dependentsDelta > 0 ? { question: '新增扶養責任後，應先做什麼？', options: ['重新估算保障缺口與保費負擔', '直接買滿所有商品', '只增加投資型保險'], correct: 0, explanation: '需求改變，先重新分析家庭支出、負債、既有保障與預算。' } : { question: '評估這次規劃，哪個標準最合理？', options: ['理賠領得最多就最高分', '期末資產最高就最高分', '按需求、負擔與固定壓力測試評估'], correct: 2, explanation: '學習表現看決策品質，不靠抽到多少事故；沒有理賠也可以是合理規劃。' };
+  const assessmentSet = [
+    { id: 'limit', question: '疾病住院支出 10 萬，原本已買一單位健康險。若事前改為兩單位，兩種配置在這次事件的給付差多少？', options: ['2 萬元', '6 萬元', '8 萬元'], correct: 0, explanation: '一單位給付 8 萬，兩單位仍以實際支出 10 萬為限，相差 2 萬。' },
+    { id: 'cash', question: '兩條路徑起始相同，這年只有一側新增年繳 1.8 萬的健康險。住院後該側領到 8 萬，其餘收支相同且現金充足。期末現金差多少？', options: ['8 萬元', '6.2 萬元', '9.8 萬元'], correct: 1, explanation: '給付 8 萬扣掉新增年繳 1.8 萬，兩邊現金差 6.2 萬。' },
+    { id: 'scope', question: '客戶持有一單位健康險與意外險。同一年因疾病門診花 1.2 萬，又因跌倒接受意外門診花 6 萬。依遊戲契約共需自付多少？', options: ['1.2 萬元', '1 萬元', '2.2 萬元'], correct: 2, explanation: '疾病門診全額自付，意外門診給付上限 5 萬。合計自付 1.2 萬加 1 萬。' }
+  ];
+  function quiz(e) {
+    if (e.kind === 'hospital') return { question: '同樣的住院條款，若改為自費 12 萬，兩單位健康險可給付多少？', options: ['8 萬元', '12 萬元', '16 萬元'], correct: 1, explanation: '兩單位上限 16 萬，但給付以實際醫療費 12 萬為限。' };
+    if (e.kind === 'accident') return { question: '假設這次意外只需門診 4 萬元，已有一單位意外險及兩單位健康險。合計給付多少？', options: ['4 萬元', '5 萬元', '8 萬元'], correct: 0, explanation: '只觸發意外門診條款，按實際支出給付 4 萬。' };
+    return null;
+  }
+  function recordAssessment(g, id, choice) {
+    const q = assessmentSet.find(x => x.id === id);
+    if (!g.completed || !q || !Number.isInteger(choice) || !q.options[choice] || Object.hasOwn(g.assessment, id)) throw new Error('此題目前無法提交');
+    g.assessment[id] = choice;
+  }
+  function evidenceOptions(s) {
+    const amount = n => n.toLocaleString('zh-TW') + ' 元';
+    return { dependents: '扶養 ' + s.dependents + ' 人', debt: '負債 ' + amount(s.debt),
+      cash: '可用現金 ' + amount(s.cash), income: '年收入 ' + amount(s.income),
+      expense: '年生活費 ' + amount(s.expense), existingLife: '既有身故保障 ' + amount(s.existingLife) };
+  }
+  function upgradeSave(g) {
+    g.evidence ??= [];
+    g.assessment ??= {};
+    if (g.comparisonVersion !== 2) {
+      const baseline = fresh(g.initialRole);
+      for (const r of g.records) {
+        r.baseline = year(baseline, r.event);
+        if (g.pending?.round === r.round) g.pending.baseline = clone(r.baseline);
+      }
+      g.baseline = baseline;
+      g.comparisonVersion = 2;
+    }
+    return g;
+  }
   function roll(game, die, forcedEvent) {
     if (game.phase !== 'planning' || game.round >= 6) throw new Error('目前無法擲骰');
     if (!Number.isInteger(die) || die < 1 || die > 6) throw new Error('骰子必須為 1–6');
@@ -222,7 +257,7 @@
     return game.pending;
   }
   function answer(game, index) {
-    if (game.phase !== 'event' || !game.pending || game.answers.some(a => a.round === game.round)) throw new Error('本回合已作答或尚未發生事件');
+    if (game.phase !== 'event' || !game.pending?.quiz || game.answers.some(a => a.round === game.round)) throw new Error('本回合已作答或尚未發生事件');
     if (!Number.isInteger(index) || index < 0 || index > 2) throw new Error('無效答案');
     const q = game.pending.quiz, result = { round: game.round, index, correct: index === q.correct };
     game.answers.push(result); game.phase = 'feedback'; return result;
@@ -253,10 +288,11 @@
     const protectionMix = expected.includes('accident') ? family * .5 + medical * .15 + accident * .35 : family * .65 + medical * .35;
     const allocation = round(25 * protectionMix);
     const affordability = round(20 * avg(m => (m.flow >= 0 ? .6 : 0) + .4 * clamp(m.reserve / 6, 0, 1)));
-    const contract = game.answers.length ? round(20 * game.answers.filter(a => a.correct).length / game.answers.length) : 0;
+    const assessed = assessmentSet.every(q => Number.isInteger(game.assessment?.[q.id]));
+    const contract = assessed ? round(20 * assessmentSet.filter(q => game.assessment[q.id] === q.correct).length / assessmentSet.length) : null;
     const retire = round(15 * avg(m => clamp(m.retirement.ratio, 0, 1)));
-    const items = [{ label: '需求分析', score: analysis, max: 20, detail: '初始角色的兩項優先需求辨識' }, { label: '保障配置', score: allocation, max: 25, detail: expected.includes('accident') ? '同一初始角色：身故保障 50%＋醫療保障 15%＋意外保障 35%，各回合平均' : '同一初始角色：身故保障適足率 65%＋醫療壓力保障 35%，各回合平均' }, { label: '預算與韌性', score: affordability, max: 20, detail: '同一初始角色：正現金流 60%＋六個月現金預備金 40%，各回合平均' }, { label: '契約理解', score: contract, max: 20, detail: '觀念題答對比例；未作答不計分' }, { label: '退休準備', score: retire, max: 15, detail: '同一初始角色：預估退休年收入／退休年支出，最高 100%，各回合平均' }];
-    return { total: items.reduce((n, i) => n + i.score, 0), items, stress: stress(game.client) };
+    const items = [{ label: '需求分析', score: analysis, max: 20, detail: '初始角色的兩項優先需求辨識' }, { label: '保障配置', score: allocation, max: 25, detail: expected.includes('accident') ? '同一初始角色：身故保障 50%＋醫療保障 15%＋意外保障 35%，各回合平均' : '同一初始角色：身故保障適足率 65%＋醫療壓力保障 35%，各回合平均' }, { label: '預算與韌性', score: affordability, max: 20, detail: '同一初始角色：正現金流 60%＋六個月現金預備金 40%，各回合平均' }, { label: '契約理解', score: contract, max: 20, detail: '固定三題完成後依正確率計算；事件選答僅供練習' }, { label: '退休準備', score: retire, max: 15, detail: '同一初始角色：預估退休年收入／退休年支出，最高 100%，各回合平均' }];
+    return { total: items.reduce((n, i) => n + (i.score ?? 0), 0), max: assessed ? 100 : 80, items, stress: stress(game.client) };
   }
   function feedback(game) {
     const m = metrics(game.client), r = game.pending || game.records[game.records.length - 1];
@@ -275,5 +311,5 @@
       return g.version === VERSION && roles.some(r => r.id === g.roleId) && ['planning', 'event', 'feedback', 'retirement', 'report'].includes(g.phase) && Number.isInteger(g.round) && g.round >= 0 && g.round <= 6 && Array.isArray(g.records) && g.records.length === g.round && Array.isArray(g.answers) && Array.isArray(g.decisions) && Array.isArray(g.selectedPriorities) && [g.client, g.baseline].every(s => s && ['cash','debt','income','expense','investments','investAccount','annuityAccount'].every(k => Number.isFinite(s[k])) && products.every(p => Number.isInteger(s.policies[p.id]) && s.policies[p.id] >= 0 && s.policies[p.id] <= p.max)) && (!(g.phase === 'event' || g.phase === 'feedback') || !!g.pending);
     } catch { return false; }
   }
-  return { VERSION, roles, products, events, deckFor, tileCategory, categories, priorities, judgments, create, setPolicy, roll, answer, next, claimEstimate, metrics, premium, flow, net, need, gap, coverage, reserveMonths, retirement, stress, score, feedback, validSave };
+  return { VERSION, roles, products, events, deckFor, tileCategory, categories, priorities, judgments, create, setPolicy, roll, answer, next, claimEstimate, metrics, premium, flow, net, need, gap, coverage, reserveMonths, retirement, stress, score, feedback, validSave, assessmentSet, recordAssessment, evidenceOptions, upgradeSave };
 });

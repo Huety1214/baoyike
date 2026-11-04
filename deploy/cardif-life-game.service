@@ -1,9 +1,10 @@
 [Unit]
-Description=Cardif Life Quest board game demo
+Description=LifeRisk insurance simulation and coaching API
 After=network.target
 
 [Service]
 WorkingDirectory=/home/changrun/cardif-life-demo
+EnvironmentFile=-/home/changrun/cardif-life-demo/.env
 ExecStart=/usr/bin/python3 /home/changrun/cardif-life-demo/deploy/serve.py
 Restart=on-failure
 RestartSec=5

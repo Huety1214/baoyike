@@ -49,3 +49,15 @@ dialog{border:1px solid var(--border);border-radius:23px;padding:0;width:min(720
   .start-bar { flex-direction:row }
   .start-bar button { width:auto }
 }
+
+.cash-figure { margin:12px 0; padding:12px; border:1px solid var(--border); border-radius:12px }
+.cash-figure figcaption { font-weight:650 }
+.cash-figure small { display:block; font-weight:400 }
+.cash-figure svg { display:block; width:100%; max-height:225px }
+.cash-figure svg text { font:11px system-ui; fill:var(--ink) }
+.cash-figure polyline { fill:none; stroke-linejoin:round }
+.planned-line { stroke:#29664f; stroke-width:4 }
+.base-line { stroke:#8b507d; stroke-width:2; stroke-dasharray:6 5 }
+.cash-figure summary,[data-coach] summary { cursor:pointer; color:var(--green) }
+[data-coach] pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px }
+[data-coach] h4 { margin-top:10px }
