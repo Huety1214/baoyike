@@ -40,6 +40,25 @@ curl -s http://127.0.0.1:8390/health                  # 本機健康檢查
 - **健康檢查失敗**：自動 `git reset --hard` 回上一個 commit 並重啟，log 寫 `↩️ 已回滾`
 - **回滾後仍不健康**：`🔥` 開頭，需要人工看 `systemctl --user status liferisk-site.service`
 
+## Discord 通知
+
+只有**偵測到新 commit**時才會發通知（成功、失敗都發；沒有新東西完全安靜）。
+
+- ✅ 部署成功：新舊 sha、主旨、作者、測試結果、health/公開站台狀態、耗時
+- ❌ 測試沒過：直接擋下，線上維持舊版
+- ⚠️ 健康檢查沒過：已自動回滾，線上回到舊版
+- 🔥 回滾後仍不健康：需要人工介入（會標明公開站台可能是壞的）
+
+通知設定在 `/home/llama/liferisk-deploy/notify.env`（`600`）：
+
+```bash
+DISCORD_BOT_TOKEN=...            # 從 Hermes profile 的 .env 取
+DISCORD_CHANNEL=1507353193951268884   # 目前丟家齊的 DM
+# 想改丟群組：換成 1556663074893598730（#2026法國巴黎人壽黑客松）
+```
+
+改完不用重啟任何服務，下一輪 timer 就會用新設定。發送邏輯在 `notify.py`，失敗只寫進 deploy.log，不會影響部署結果。
+
 ## 憑證
 
 `git fetch` 用的是 VPS 上 `/home/llama/.git-credentials`（`600`，只讀得到 = 只有 `llama`）。
