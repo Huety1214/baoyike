@@ -1,6 +1,6 @@
 /* Headless smoke test for dist/academy.js — renders setup, plays a full game, renders report. */
 const path = require('path');
-const ROOT = '/home/thinkpad_t460/Projects/baoyike/dist';
+const ROOT = path.join(__dirname, '..', 'dist');
 
 function fakeEl() {
   return new Proxy({ open: false, scrollTop: 0, textContent: '' }, {
