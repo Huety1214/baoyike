@@ -5,7 +5,7 @@
   const money = n => Math.round(n).toLocaleString('zh-TW'), wan = n => (n / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 1 }) + ' 萬', pct = n => Math.round(n * 100) + '%';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const signed = n => (n > 0 ? '+' : '') + money(n), row = (label, value, cls = '') => `<div class="data-row"><span>${label}</span><strong class="${cls}">${value}</strong></div>`;
-  let game = null, view = 'setup', rolling = false, toastTimer;
+  let game = null, view = 'setup', rolling = false, toastTimer, tokenPos = null;
   function toast(message) { const el = document.querySelector('#toast'); el.textContent = message; el.classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('visible'), 3500); }
   let modalLocked = false;
   function dialog(title, body, eyebrow = 'LifeRisk', actions = '', closable = true) {
@@ -36,12 +36,12 @@
     const icons = { life: '✿', risk: '♡', market: '↗', contract: '▤' }, labels = { life: '人生', risk: '風險', market: '市場', contract: '契約' };
     return COORDS.map(([y,x], i) => { const c = E.tileCategory(i); return `<div class="tile ${c} ${i === game.position ? 'current' : ''}" style="grid-area:${y}/${x}" aria-label="第 ${i + 1} 格 ${E.categories[c]}${i === game.position ? '，目前位置' : ''}"><b class="tile-num">${String(i + 1).padStart(2, '0')}</b><span aria-hidden="true">${i === 0 ? '⌂' : icons[c]}</span><small>${labels[c]}</small></div>`; }).join('');
   }
-  function boardToken(client, moveFrom) {
-    const role = E.roles.find(r => r.id === game.roleId), [y, x] = COORDS[game.position] || COORDS[0];
-    const moving = moveFrom != null && moveFrom !== game.position;
-    return `<div class="board-token${moving ? ' moving' : ''}" style="grid-area:${y}/${x}" aria-hidden="true"><span>${client.alive ? role.icon : '⌂'}</span></div>`;
+  function boardToken(client) {
+    const role = E.roles.find(r => r.id === game.roleId), pos = tokenPos ?? game.position;
+    const [y, x] = COORDS[pos] || COORDS[0];
+    return `<div class="board-token" style="grid-area:${y}/${x}" aria-hidden="true"><span>${client.alive ? role.icon : '⌂'}</span></div>`;
   }
-  function renderGame(moveFrom) {
+  function renderGame() {
     if (!game) { view = 'setup'; return renderSetup(); }
     const s = game.client, m = E.metrics(s), pending = game.pending;
     const shownRound = Math.min(game.round + (game.phase === 'planning' ? 1 : 0), 6);
@@ -49,7 +49,7 @@
     app.innerHTML = `<header class="play-toolbar"><div class="client-summary"><h1>${s.name}<small>${s.alive ? s.job + ' · ' + s.age + ' 歲' : '家屬接續'}</small></h1><button class="small-link" data-action="client">客戶資料 ↗</button></div>
       <button class="primary" data-action="planning">保險規劃</button><button class="secondary" data-action="journal">人生手帳</button></header><div class="workspace">
     <aside class="left-column"><div class="metrics-grid" aria-label="財務與保障儀表板">${metric('年度現金流', signed(m.flow), '收入－生活－還款－年繳', 'flow', '↗', m.flow < 0 ? 'negative' : '')}${metric('家庭保障缺口', wan(m.gap), '點擊查看估算依據', 'gap', '♡', m.gap ? 'negative' : '')}${metric('財務韌性', m.reserve.toFixed(1) + ' 個月', '現金預備金・目標 6 個月', 'reserve', '◎')}${metric('淨資產', wan(m.net), '含資產與保單帳戶－負債', 'net', '▥')}${metric('退休準備度', pct(m.retirement.ratio), '退休收入／退休生活支出', 'retirement', '◷')}${metric('年度保費與投入', wan(m.premium), '含保障、投資與年金投入', 'premium', '◇')}</div></aside>
-    <section class="center-column">${s.insolvent ? '<div class="status-note">曾出現支付缺口：系統已先變現一般投資，再將不足額記為緊急借款。請檢查現金流與負債。</div>' : ''}<section class="panel board-panel"><div class="board-label"><h2>人生棋盤 <span class="eyebrow">六年旅程</span></h2><div class="round-wrap"><div class="round-pips" aria-hidden="true">${pips}</div><span class="round-tag">第 ${shownRound} / 6 回合</span></div></div><div class="board-wrap"><div class="board">${tiles()}${boardToken(s, moveFrom)}<div class="board-center"><div class="dice ${rolling ? 'rolling' : ''}" aria-label="骰子 ${game.dice} 點">${['⚀','⚁','⚂','⚃','⚄','⚅'][game.dice - 1]}</div><button class="primary" data-action="${pending ? 'event' : 'roll'}" ${rolling ? 'disabled' : ''}>${rolling ? '擲骰中…' : pending ? '查看本回合結算' : '擲骰'}</button></div></div></div><div class="legend"><span><i class="risk"></i>風險事件</span><span><i class="market"></i>市場事件</span><span><i class="life"></i>人生事件</span><span><i></i>契約事件</span></div></section>
+    <section class="center-column">${s.insolvent ? '<div class="status-note">曾出現支付缺口：系統已先變現一般投資，再將不足額記為緊急借款。請檢查現金流與負債。</div>' : ''}<section class="panel board-panel"><div class="board-label"><h2>人生棋盤 <span class="eyebrow">六年旅程</span></h2><div class="round-wrap"><div class="round-pips" aria-hidden="true">${pips}</div><span class="round-tag">第 ${shownRound} / 6 回合</span></div></div><div class="board-wrap"><div class="board">${tiles()}${boardToken(s)}<div class="board-center"><div class="dice ${rolling ? 'rolling' : ''}" aria-label="骰子 ${game.dice} 點">${['⚀','⚁','⚂','⚃','⚄','⚅'][game.dice - 1]}</div><button class="primary" data-action="${pending ? 'event' : 'roll'}" ${rolling ? 'disabled' : ''}>${rolling ? '擲骰中…' : pending ? '查看本回合結算' : '擲骰'}</button></div></div></div><div class="legend"><span><i class="risk"></i>風險事件</span><span><i class="market"></i>市場事件</span><span><i class="life"></i>人生事件</span><span><i></i>契約事件</span></div></section>
     </section><aside class="right-column">${riskPanel(s)}<section class="panel coach-panel"><h2>本回合風險提示</h2><div data-coach></div><button class="small-link" data-action="report">查看階段回顧 ↗</button></section></aside></div>`;
     mountCoach(false);
   }
@@ -243,17 +243,29 @@
     const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href=url; a.download=`liferisk-${game.roleId}-round-${game.round}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(url), 1000); toast('完整紀錄已匯出。');
   }
   const pause = ms => new Promise(r => setTimeout(r, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : ms));
-  function animateToken(fromPos) {
-    const token = app.querySelector('.board-token span'), board = app.querySelector('.board');
-    if (!token || !board || fromPos == null || fromPos === game.position) return;
+  async function animateTokenPath(fromPos, die) {
+    const board = app.querySelector('.board');
+    if (!board) return;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const r = board.getBoundingClientRect(), gap = 6, cell = (r.width - 5 * gap) / 6;
-    const [oy, ox] = COORDS[fromPos], [ny, nx] = COORDS[game.position];
-    token.style.transition = 'none';
-    token.style.transform = `translate(${(nx - ox) * (cell + gap)}px,${(ny - oy) * (cell + gap)}px)`;
-    requestAnimationFrame(() => {
-      token.style.transition = 'transform .55s cubic-bezier(.3,.9,.35,1.15)';
-      token.style.transform = 'translate(0,0)';
-    });
+    let cur = fromPos;
+    for (let step = 1; step <= die; step++) {
+      const next = (fromPos + step) % 20;
+      const token = app.querySelector('.board-token');
+      if (!token || !token.isConnected) return;
+      const [cy, cx] = COORDS[cur], [ny, nx] = COORDS[next];
+      token.style.gridArea = `${ny}/${nx}`;
+      if (!reduce) {
+        const dot = token.querySelector('span');
+        dot.style.transition = 'none';
+        dot.style.transform = `translate(${(cx - nx) * (cell + gap)}px,${(cy - ny) * (cell + gap)}px)`;
+        await new Promise(rq => requestAnimationFrame(() => rq()));
+        dot.style.transition = 'transform .14s linear';
+        dot.style.transform = 'translate(0,0)';
+      }
+      cur = next;
+      await pause(110);
+    }
   }
   async function doRoll() {
     if (!game || game.phase !== 'planning' || rolling) return;
@@ -264,9 +276,10 @@
     await pause(700);
     try { E.roll(game, die); } catch(error) { rolling = false; renderGame(); return toast(error.message); }
     rolling = false;
-    renderGame(fromPos);
-    animateToken(fromPos);
-    await pause(750);
+    tokenPos = fromPos; renderGame();
+    await pause(250);
+    await animateTokenPath(fromPos, die);
+    tokenPos = null;
     showEvent();
   }
   document.addEventListener('click', async event => {

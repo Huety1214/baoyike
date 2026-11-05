@@ -65,9 +65,9 @@ dialog{border:1px solid var(--border);border-radius:23px;padding:0;width:min(720
 .round-pips span { width:16px; height:5px; border-radius:3px; background:#dde5d4 }
 .round-pips span.done { background:var(--green) }
 .round-pips span.now { background:var(--lime); box-shadow:inset 0 0 0 1px #82a36e }
-.board-token { pointer-events:none; display:grid; align-content:start; justify-items:end; z-index:3; animation:token-pop .55s cubic-bezier(.34,1.56,.64,1) }
-.board-token span { width:30px; height:30px; border-radius:50%; background:var(--green); color:#fffef9; display:grid; place-items:center; font-size:15px; border:2px solid #fffef9; box-shadow:0 4px 9px #263f364d; margin:-15px -7px 0 0; animation:token-land .35s }
-@keyframes token-pop { from { transform:scale(0) translateY(-12px) } to { transform:scale(1) translateY(0) } }
+.board-token { pointer-events:none; display:grid; align-content:start; justify-items:end; z-index:3; }
+.board-token span { width:30px; height:30px; border-radius:50%; background:var(--green); color:#fffef9; display:grid; place-items:center; font-size:15px; border:2px solid #fffef9; box-shadow:0 4px 9px #263f364d; margin:-15px -7px 0 0 }
+ }
 .ledger.hero strong { font-size:25px }
 .ledger article { animation:rise .45s both }
 .ledger article:nth-child(2) { animation-delay:.07s }
@@ -94,7 +94,7 @@ dialog{border:1px solid var(--border);border-radius:23px;padding:0;width:min(720
 .guide-num { width:44px; height:44px; flex-shrink:0; border-radius:50%; background:var(--green); color:#fffef9; display:grid; place-items:center; font-size:20px; font-weight:700 }
 .guide-step h3 { font-size:19px; margin:2px 0 6px }
 .guide-step p { font-size:15px; color:#44544a; margin:0 }
-@keyframes token-land { from { transform:scale(.4) } to { transform:scale(1) } }
+ }
 
 /* In-game desktop layout — fixed viewport, no page scroll on the game screen */
 body.in-game { height:100dvh; overflow:hidden; display:flex; flex-direction:column }
@@ -136,7 +136,6 @@ body.in-game .play-toolbar .primary { justify-self:center; padding:12px 46px }
 body.in-game .play-toolbar .secondary { justify-self:end; padding:12px 24px }
 body.in-game .left-column .metrics-grid { flex:1; grid-template-rows:repeat(6,minmax(0,1fr)) }
 body.in-game .metric { display:flex; flex-direction:column; justify-content:center }
-.board-token.moving, .board-token.moving span { animation:none }
 .journal-list { max-height:52dvh; overflow-y:auto; padding:2px 8px 2px 0 }
 @media(max-width:1160px){
   body.in-game .play-toolbar { display:flex; justify-content:space-between; max-width:1160px; margin:0 auto 18px; padding-bottom:14px }
