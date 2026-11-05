@@ -74,6 +74,8 @@ await click('intro-confirm');
 ok.push(['game board', container('人生棋盤')]);
 ok.push(['left column metrics', container('left-column') && container('年度現金流')]);
 ok.push(['right column risk', container('right-column') && container('風險由誰承擔')]);
+ok.push(['journal is toolbar button', container('data-action="journal"') && !container('journal-panel')]);
+ok.push(['planning centered', container('data-action="planning"')]);
 ok.push(['board token', container('board-token')]);
 ok.push(['round pips', container('round-pips')]);
 ok.push(['no demo note', !container('示範局')]);
@@ -92,10 +94,18 @@ ok.push(['radar chart', container('class="radar"')]);
 ok.push(['coach at top', html.indexOf('決策復盤') < html.indexOf('歷年期末現金')]);
 ok.push(['assessment panel', container('契約理解評量')]);
 
-// 5. Restart returns to setup without resume banner.
+// 5. Restart returns to setup without resume banner, and intro selections reset.
 await click('restart');
 ok.push(['back to setup', container('選擇客戶')]);
 ok.push(['no resume banner', !container('還在進行中')]);
+await click('role', { id: 'doctor' });
+ok.push(['intro popup again', modalHtml().includes('開局分析')]);
+ok.push(['intro selections reset', /data-action="intro-confirm" disabled/.test(modalHtml()) && !modalHtml().includes('priority-choice selected')]);
+await click('intro-evidence', { id: 'income' });
+await click('intro-priority', { id: 'retirement' });
+await click('intro-priority', { id: 'medical' });
+await click('intro-confirm');
+ok.push(['new game starts', container('人生棋盤')]);
 
 const failed = ok.filter(([name, pass]) => !pass);
 console.log(ok.map(([n, p]) => (p ? 'PASS' : 'FAIL') + '  ' + n).join('\n'));

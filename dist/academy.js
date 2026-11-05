@@ -36,19 +36,20 @@
     const icons = { life: '✿', risk: '♡', market: '↗', contract: '▤' }, labels = { life: '人生', risk: '風險', market: '市場', contract: '契約' };
     return COORDS.map(([y,x], i) => { const c = E.tileCategory(i); return `<div class="tile ${c} ${i === game.position ? 'current' : ''}" style="grid-area:${y}/${x}" aria-label="第 ${i + 1} 格 ${E.categories[c]}${i === game.position ? '，目前位置' : ''}"><b class="tile-num">${String(i + 1).padStart(2, '0')}</b><span aria-hidden="true">${i === 0 ? '⌂' : icons[c]}</span><small>${labels[c]}</small></div>`; }).join('');
   }
-  function boardToken(client) {
+  function boardToken(client, moveFrom) {
     const role = E.roles.find(r => r.id === game.roleId), [y, x] = COORDS[game.position] || COORDS[0];
-    return `<div class="board-token" style="grid-area:${y}/${x}" aria-hidden="true"><span>${client.alive ? role.icon : '⌂'}</span></div>`;
+    const moving = moveFrom != null && moveFrom !== game.position;
+    return `<div class="board-token${moving ? ' moving' : ''}" style="grid-area:${y}/${x}" aria-hidden="true"><span>${client.alive ? role.icon : '⌂'}</span></div>`;
   }
-  function renderGame() {
+  function renderGame(moveFrom) {
     if (!game) { view = 'setup'; return renderSetup(); }
     const s = game.client, m = E.metrics(s), pending = game.pending;
     const shownRound = Math.min(game.round + (game.phase === 'planning' ? 1 : 0), 6);
     const pips = Array.from({ length: 6 }, (_, i) => `<span class="${i + 1 <= game.round ? 'done ' : ''}${i + 1 === shownRound ? 'now' : ''}"></span>`).join('');
     app.innerHTML = `<header class="play-toolbar"><div class="client-summary"><h1>${s.name}<small>${s.alive ? s.job + ' · ' + s.age + ' 歲' : '家屬接續'}</small></h1><button class="small-link" data-action="client">客戶資料 ↗</button></div>
-      <button class="primary" data-action="planning">保險規劃</button></header><div class="workspace">
-    <aside class="left-column"><div class="metrics-grid" aria-label="財務與保障儀表板">${metric('年度現金流', signed(m.flow), '收入－生活－還款－年繳', 'flow', '↗', m.flow < 0 ? 'negative' : '')}${metric('家庭保障缺口', wan(m.gap), '點擊查看估算依據', 'gap', '♡', m.gap ? 'negative' : '')}${metric('財務韌性', m.reserve.toFixed(1) + ' 個月', '現金預備金・目標 6 個月', 'reserve', '◎')}${metric('淨資產', wan(m.net), '含資產與保單帳戶－負債', 'net', '▥')}${metric('退休準備度', pct(m.retirement.ratio), '退休收入／退休生活支出', 'retirement', '◷')}${metric('年度保費與投入', wan(m.premium), '含保障、投資與年金投入', 'premium', '◇')}</div><section class="panel journal-panel"><div class="journal-head"><h2>人生手帳</h2><small>${game.records.length ? game.records.length + ' 段經歷' : '等待第一個故事'}</small></div>${game.records.length ? [...game.records].reverse().map(r => `<button class="journal-entry" data-action="history" data-round="${r.round}"><span class="journal-dot">${r.event.icon}</span><div><small>第 ${String(r.round).padStart(2,'0')} 回合${r.scheduled ? ' · 必修情境' : r.teaching ? ' · 指定演練' : ''}</small><h4>${r.event.subtitle}</h4><p>${r.actual.claim ? '契約給付 ' + wan(r.actual.claim) : r.actual.marketChange ? '市場損益 ' + wan(r.actual.marketChange) : '本次損失 ' + wan(r.actual.loss)}</p></div></button>`).join('') : '<div class="empty-journal"><span>▤</span><p>還沒發生的故事，<br>從你的第一份規劃開始。</p></div>'}<button class="small-link" data-action="export">匯出決策紀錄 ↓</button></section></aside>
-    <section class="center-column">${s.insolvent ? '<div class="status-note">曾出現支付缺口：系統已先變現一般投資，再將不足額記為緊急借款。請檢查現金流與負債。</div>' : ''}<section class="panel board-panel"><div class="board-label"><h2>人生棋盤 <span class="eyebrow">六年旅程</span></h2><div class="round-wrap"><div class="round-pips" aria-hidden="true">${pips}</div><span class="round-tag">第 ${shownRound} / 6 回合</span></div></div><div class="board-wrap"><div class="board">${tiles()}${boardToken(s)}<div class="board-center"><div class="dice ${rolling ? 'rolling' : ''}" aria-label="骰子 ${game.dice} 點">${['⚀','⚁','⚂','⚃','⚄','⚅'][game.dice - 1]}</div><button class="primary" data-action="${pending ? 'event' : 'roll'}" ${rolling ? 'disabled' : ''}>${rolling ? '擲骰中…' : pending ? '查看本回合結算' : '擲骰'}</button></div></div></div><div class="legend"><span><i class="risk"></i>風險事件</span><span><i class="market"></i>市場事件</span><span><i class="life"></i>人生事件</span><span><i></i>契約事件</span></div></section>
+      <button class="primary" data-action="planning">保險規劃</button><button class="secondary" data-action="journal">人生手帳</button></header><div class="workspace">
+    <aside class="left-column"><div class="metrics-grid" aria-label="財務與保障儀表板">${metric('年度現金流', signed(m.flow), '收入－生活－還款－年繳', 'flow', '↗', m.flow < 0 ? 'negative' : '')}${metric('家庭保障缺口', wan(m.gap), '點擊查看估算依據', 'gap', '♡', m.gap ? 'negative' : '')}${metric('財務韌性', m.reserve.toFixed(1) + ' 個月', '現金預備金・目標 6 個月', 'reserve', '◎')}${metric('淨資產', wan(m.net), '含資產與保單帳戶－負債', 'net', '▥')}${metric('退休準備度', pct(m.retirement.ratio), '退休收入／退休生活支出', 'retirement', '◷')}${metric('年度保費與投入', wan(m.premium), '含保障、投資與年金投入', 'premium', '◇')}</div></aside>
+    <section class="center-column">${s.insolvent ? '<div class="status-note">曾出現支付缺口：系統已先變現一般投資，再將不足額記為緊急借款。請檢查現金流與負債。</div>' : ''}<section class="panel board-panel"><div class="board-label"><h2>人生棋盤 <span class="eyebrow">六年旅程</span></h2><div class="round-wrap"><div class="round-pips" aria-hidden="true">${pips}</div><span class="round-tag">第 ${shownRound} / 6 回合</span></div></div><div class="board-wrap"><div class="board">${tiles()}${boardToken(s, moveFrom)}<div class="board-center"><div class="dice ${rolling ? 'rolling' : ''}" aria-label="骰子 ${game.dice} 點">${['⚀','⚁','⚂','⚃','⚄','⚅'][game.dice - 1]}</div><button class="primary" data-action="${pending ? 'event' : 'roll'}" ${rolling ? 'disabled' : ''}>${rolling ? '擲骰中…' : pending ? '查看本回合結算' : '擲骰'}</button></div></div></div><div class="legend"><span><i class="risk"></i>風險事件</span><span><i class="market"></i>市場事件</span><span><i class="life"></i>人生事件</span><span><i></i>契約事件</span></div></section>
     </section><aside class="right-column">${riskPanel(s)}<section class="panel coach-panel"><h2>本回合風險提示</h2><div data-coach></div><button class="small-link" data-action="report">查看階段回顧 ↗</button></section></aside></div>`;
     mountCoach(false);
   }
@@ -225,6 +226,10 @@
       <div class="intro-block"><h3>哪些需求優先？（選兩項 · ${introPriorities.length}/2）</h3><div class="priority-choices">${Object.entries(E.priorities).map(([id, label]) => pick(id, label, introPriorities, 'intro-priority')).join('')}</div></div>`,
       '第一步 · 需求分析', `<button class="primary" data-action="intro-confirm" ${introPriorities.length !== 2 || !introEvidence.length ? 'disabled' : ''}>開始第一回合 →</button>`, false);
   }
+  function journalDialog() {
+    const entries = game.records.length ? [...game.records].reverse().map(r => `<button class="journal-entry" data-action="history" data-round="${r.round}"><span class="journal-dot">${r.event.icon}</span><div><small>第 ${String(r.round).padStart(2,'0')} 回合${r.scheduled ? ' · 必修情境' : r.teaching ? ' · 指定演練' : ''}</small><h4>${r.event.subtitle}</h4><p>${r.actual.claim ? '契約給付 ' + wan(r.actual.claim) : r.actual.marketChange ? '市場損益 ' + wan(r.actual.marketChange) : '本次損失 ' + wan(r.actual.loss)}</p></div></button>`).join('') : '<div class="empty-journal"><span>▤</span><p>還沒發生的故事，<br>從你的第一份規劃開始。</p></div>';
+    dialog('人生手帳', `<div class="journal-list">${entries}</div>`, '至今的經歷', '<button class="secondary" data-action="export">匯出決策紀錄 ↓</button>');
+  }
   function guide() {
     dialog('玩法指南', `<div class="guide-steps">
       <div class="guide-step"><span class="guide-num">1</span><div><h3>認識客戶</h3><p>選擇一位角色，他的人生立即開局：家庭、負債與收入都寫在客戶卡上。</p></div></div>
@@ -237,13 +242,32 @@
     const blob = new Blob([JSON.stringify({ ...game, evaluation: E.score(game), exportedAt: new Date().toISOString(), coaching:game.coaching || null }, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href=url; a.download=`liferisk-${game.roleId}-round-${game.round}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(url), 1000); toast('完整紀錄已匯出。');
   }
+  const pause = ms => new Promise(r => setTimeout(r, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : ms));
+  function animateToken(fromPos) {
+    const token = app.querySelector('.board-token span'), board = app.querySelector('.board');
+    if (!token || !board || fromPos == null || fromPos === game.position) return;
+    const r = board.getBoundingClientRect(), gap = 6, cell = (r.width - 5 * gap) / 6;
+    const [oy, ox] = COORDS[fromPos], [ny, nx] = COORDS[game.position];
+    token.style.transition = 'none';
+    token.style.transform = `translate(${(nx - ox) * (cell + gap)}px,${(ny - oy) * (cell + gap)}px)`;
+    requestAnimationFrame(() => {
+      token.style.transition = 'transform .55s cubic-bezier(.3,.9,.35,1.15)';
+      token.style.transform = 'translate(0,0)';
+    });
+  }
   async function doRoll() {
     if (!game || game.phase !== 'planning' || rolling) return;
-    close(); rolling = true; renderGame();
+    close();
+    const fromPos = game.position;
+    rolling = true; renderGame();
     const bytes = new Uint32Array(1); crypto.getRandomValues(bytes); const die = bytes[0] % 6 + 1;
-    await new Promise(resolve=>setTimeout(resolve, matchMedia('(prefers-reduced-motion: reduce)').matches?0:650));
-    try { E.roll(game,die);  } catch(error) { toast(error.message); }
-    rolling = false; renderGame(); showEvent();
+    await pause(700);
+    try { E.roll(game, die); } catch(error) { rolling = false; renderGame(); return toast(error.message); }
+    rolling = false;
+    renderGame(fromPos);
+    animateToken(fromPos);
+    await pause(750);
+    showEvent();
   }
   document.addEventListener('click', async event => {
     const button = event.target.closest('[data-action]'); if(!button || button.disabled) return;
@@ -251,13 +275,14 @@
     try {
       if(action==='close') return close();
       if(action==='guide') return guide();
-      if(action==='role') { const role = E.roles.find(r => r.id === id); if (!role) return; game = E.create(id, []); view='game'; render(); window.scrollTo(0,0); return introAnalysis(); }
-      if(action==='restart') { close(); if(rolling) return; view='setup'; render();window.scrollTo(0,0);return; }
+      if(action==='role') { const role = E.roles.find(r => r.id === id); if (!role) return; introEvidence = []; introPriorities = []; game = E.create(id, []); view='game'; render(); window.scrollTo(0,0); return introAnalysis(); }
+      if(action==='restart') { close(); if(rolling) return; game = null; introEvidence = []; introPriorities = []; view='setup'; render();window.scrollTo(0,0);return; }
       if(action==='resume'||action==='game') { close(); if(!game){view='setup';} else view=game.completed?'report':'game'; render();window.scrollTo(0,0);return; }
       if(!game) return;
       if(action==='intro-evidence') { introEvidence = introEvidence.includes(id) ? introEvidence.filter(x => x !== id) : [...introEvidence, id]; return introAnalysis(); }
       if(action==='intro-priority') { if (introPriorities.includes(id)) introPriorities = introPriorities.filter(p => p !== id); else if (introPriorities.length < 2) introPriorities.push(id); else return toast('請先取消一項，再選新的優先需求。'); return introAnalysis(); }
       if(action==='intro-confirm') { if (introPriorities.length !== 2 || !introEvidence.length) return; game.evidence = [...introEvidence]; game.selectedPriorities = [...introPriorities]; close(); render(); return; }
+      if(action==='journal') { return journalDialog(); }
       if(action==='policy') {
         const p=E.products.find(p=>p.id===id), target=game.client.policies[id]+Number(button.dataset.delta);
         if(target<game.client.policies[id] && ['investment','annuity'].includes(id)) { const account=game.client[id==='investment'?'investAccount':'annuityAccount']; if(account>0) { const amount=Math.round(account/game.client.policies[id]); return dialog('調整前，先看解約成本。', `<p class="event-description">${p.name}減少一單位，會按比例提領帳戶並收取 5% 解約費。</p>${row('提領帳戶',money(amount))}${row('解約費',money(Math.round(amount*.05)))}${row('加入現金',money(amount-Math.round(amount*.05)))}`, '調整前確認', `<button class="secondary" data-action="planning">保留配置</button><button class="primary" data-action="policy-confirm" data-id="${id}" data-units="${target}">確認調整 →</button>`); } }
