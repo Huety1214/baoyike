@@ -15,6 +15,34 @@ GROUPS = ('risks', 'strengths', 'weaknesses')
 SLOTS = BoundedSemaphore(4)
 REQUESTS = deque()
 LOCK = Lock()
+
+def load_env(path=None):
+    """Load single-line dotenv values without shell expansion or environment overrides."""
+    path = Path(path) if path is not None else Path(__file__).resolve().parents[1] / '.env'
+    try:
+        lines = path.read_text(encoding='utf-8-sig').splitlines()
+    except FileNotFoundError:
+        return
+    for number, line in enumerate(lines, 1):
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        match = re.fullmatch(r'(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)', line)
+        if not match:
+            raise ValueError(f'Invalid .env assignment at line {number}')
+        name, value = match.groups()
+        if value.startswith(('"', "'")):
+            pattern = r'"((?:[^"\\]|\\.)*)"\s*(?:#.*)?' if value[0] == '"' else r"'([^']*)'\s*(?:#.*)?"
+            quoted = re.fullmatch(pattern, value)
+            if not quoted:
+                raise ValueError(f'Invalid .env quoting at line {number}')
+            value = re.sub(r'\\([\\"])', r'\1', quoted[1]) if value[0] == '"' else quoted[1]
+        else:
+            value = re.split(r'\s+#', value, maxsplit=1)[0].rstrip()
+            if value.startswith('#'):
+                value = ''
+        os.environ.setdefault(name, value)
+
 def load_prompt():
     """The coach system prompt lives in an external file (coach-prompt.txt next to this
     script, overridable via COACH_PROMPT_FILE) so it can be tuned without editing serve.py."""
@@ -135,6 +163,8 @@ class Handler(SimpleHTTPRequestHandler):
         self.respond(200,result)
 
 if __name__=='__main__':
+    load_env()
+    PROMPT = load_prompt()
     port=int(os.getenv('PORT','8390'))
     print(f'LifeRisk listening on http://127.0.0.1:{port}',flush=True)
     ThreadingHTTPServer(('127.0.0.1',port),Handler).serve_forever()

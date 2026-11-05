@@ -27,11 +27,10 @@ chmod 600 .env
 在伺服器的 `.env` 填入 `LLM_API_KEY`。預設 `LLM_BASE_URL=https://api.mistral.ai/v1` 與 `LLM_MODEL=zai-glm-5-3-flash`；請以帳號或相容供應商實際開放的模型 ID 為準。Base URL 含版本前綴，不加 `/chat/completions`。模型必須支援 chat completions 及 JSON mode。
 
 ```sh
-set -a
-. ./.env
-set +a
 python3 deploy/serve.py
 ```
+
+啟動時會自動載入專案根目錄的 `.env`，不受目前工作目錄影響；shell 或 systemd 已設定的環境變數優先（包含空值）。支援單行 `KEY=value`、單／雙引號、`export` 前綴與註解，不執行命令或展開變數。`.env` 不存在時仍可啟動；格式錯誤會指出行號並停止啟動。修改後需重啟服務。
 
 開啟 `http://127.0.0.1:8390`。Nginx 將整站（含 `/api/coach`）轉送到此服務。沿用 repo 的 systemd 範例時，將 WorkingDirectory、EnvironmentFile、ExecStart 的絕對路徑改成實際目錄。金鑰僅由後端讀取，靜態檔案僅從 `dist/` 供應。HTTP 503 表示未配置或暫時無法服務；上游拒絕時 server log 會顯示上游 HTTP 狀態。請檢查模型權限與 base URL。測試採模擬端點，未使用正式帳號推論。
 

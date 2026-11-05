@@ -13,6 +13,8 @@
 - 部署腳本：`/home/llama/liferisk-deploy/deploy.sh`（**刻意放在 repo 外**，避免被 commit 改掉執行權限內容）
 - 部署 log：`/home/llama/liferisk-deploy/deploy.log`
 
+`serve.py` 啟動時會自動讀取專案根目錄的 `.env`，不需手動 `source`，也不受工作目錄影響。shell／systemd 已設定的環境變數優先於檔案（包含空值）；修改 `.env` 後需重啟服務。檔案不存在時沿用環境變數與預設值，格式錯誤則回報行號並停止啟動。
+
 ## 常用指令（在 VPS 上以 `llama` 身分執行）
 
 ```bash
