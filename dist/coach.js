@@ -14,6 +14,23 @@
     if (s.alive && s.policies.health < 2) add('risks', round, 'hospital', '若住院支出 10 萬元，目前配置需自付 ' + value(100000 - E.claimEstimate(s, 'hospital', 100000)) + '。');
     if (s.alive && !s.policies.accident) add('risks', round, 'accident', '目前沒有意外險，若意外門診花 6 萬元，將由客戶全額負擔。');
     add('risks', round, 'reserve', '以目前保費與必要支出估算，現金可支應 ' + m.reserve.toFixed(1) + ' 個月。' + (m.reserve < 6 ? '低於本局六個月的緩衝目標。' : '檢查長期收入中斷時的資金來源。'));
+    // Round-stage context: react to the last event, the chosen priorities and the latest adjustments.
+    const last = g.records[g.records.length - 1];
+    if (last) add('risks', round, 'last-event', '上回合「' + last.event.subtitle + '」損失 ' + value(last.actual.loss) + '、給付 ' + value(last.actual.claim) + '、自付 ' + value(Math.max(0, last.actual.outOfPocket)) + '。');
+    if (m.flow < 0) add('risks', round, 'flow-negative', '目前年度現金流為 ' + value(m.flow) + '，長期恐難持續，先檢查保費配置。');
+    const needChecks = [
+      ['medical', s.alive && !s.policies.health, '你開局把「醫療風險」列為優先，但目前住院支出仍全額自付。'],
+      ['family', s.alive && m.gap > 0, '你開局關注家庭保障，依五年支出假設仍差 ' + value(m.gap) + '。'],
+      ['accident', s.alive && !s.policies.accident, '你開局關注工作意外，但目前沒有配置意外險。'],
+      ['liquidity', m.reserve < 6, '你開局關注緊急預備金，目前現金只夠 ' + m.reserve.toFixed(1) + ' 個月。'],
+      ['retirement', m.retirement.ratio < 1, '你開局關注退休現金流，目前退休準備度約 ' + Math.round(m.retirement.ratio * 100) + '%。']
+    ];
+    for (const [p, hit, text] of needChecks) if (hit && g.selectedPriorities.includes(p)) add('risks', round, 'need-' + p, text);
+    for (const d of g.decisions.filter(d => d.round === round)) {
+      const product = E.products.find(x => x.id === d.product);
+      if (d.to > d.from && d.afterFlow >= 0) add('strengths', round, 'adjust-' + d.product, '你把「' + (product ? product.name : d.product) + '」調到 ' + d.to + ' 單位，年度現金流仍有 ' + value(d.afterFlow) + '。');
+      else if (d.to > d.from) add('risks', round, 'adjust-' + d.product, '「' + (product ? product.name : d.product) + '」調到 ' + d.to + ' 單位後，年度現金流變成 ' + value(d.afterFlow) + '。');
+    }
     if (!final) return pool;
     for (const r of g.records) {
       const m0 = r.metricsBefore, p = r.policies;
@@ -46,11 +63,19 @@
     }
     return result;
   }
+  // Fallback ordering: contextual evidence (last event, unmet priority, latest adjustment) first.
+  const kindRank = id => {
+    const kind = id.slice(id.indexOf('-') + 1);
+    if (kind === 'last-event' || kind === 'flow-negative') return 0;
+    if (kind.startsWith('need-')) return 1;
+    if (kind.startsWith('adjust-')) return 2;
+    return 9;
+  };
   function rules(pool, stage) {
     const ids = {};
     for (const key of groups) {
       const used = new Set();
-      ids[key] = pool[key].filter(x => {
+      ids[key] = pool[key].slice().sort((a, b) => kindRank(a.id) - kindRank(b.id)).filter(x => {
         const kind = x.id.slice(x.id.indexOf('-') + 1);
         if (used.has(kind)) return false;
         used.add(kind); return true;

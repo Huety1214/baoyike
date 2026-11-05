@@ -197,6 +197,29 @@ test('legacy comparison replays the same events including existing death benefit
   const state=JSON.stringify(g); E.upgradeSave(g); assert.equal(JSON.stringify(g),state);
 });
 
+test('round coach candidates react to priorities, latest adjustment and last event', () => {
+  const C = require('../dist/coach.js'), g = newGame(); // engineer priorities: family + medical
+  let pool = C.candidates(g, false);
+  assert.ok(pool.risks.some(f => f.id === '1-need-medical'));
+  assert.ok(pool.risks.some(f => f.id === '1-need-family'));
+  assert.equal(pool.strengths.length, 0);
+  E.setPolicy(g, 'health', 1);
+  pool = C.candidates(g, false);
+  assert.ok(pool.strengths.some(f => f.id === '1-adjust-health'));
+  assert.ok(!pool.risks.some(f => f.id === '1-need-medical'));
+  E.roll(g, 1, 'hospital'); finishRound(g);
+  pool = C.candidates(g, false);
+  const last = pool.risks.find(f => f.id.endsWith('-last-event'));
+  assert.ok(last && last.id === '2-last-event' && last.text.includes('疾病住院') && last.text.includes('給付'), JSON.stringify(last));
+  const rules = C.rules(pool, 'round');
+  assert.ok(rules.risks.length >= 1);
+  assert.equal(rules.risks[0].evidenceId, '2-last-event'); // contextual evidence wins the fallback
+  for (const items of Object.values(pool)) for (const f of items) {
+    assert.match(f.id, /^[0-6]-[a-z-]{1,45}$/, f.id);
+    assert.ok(f.text.length <= 220, f.id);
+  }
+});
+
 test('coach accepts only evidence from the corresponding group and keeps source markers', () => {
   const C=require('../dist/coach.js'), g=newGame();
   E.setPolicy(g,'health',1); E.roll(g,1,'hospital');

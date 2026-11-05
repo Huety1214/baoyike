@@ -84,6 +84,8 @@ class PromptFile(unittest.TestCase):
         self.assertTrue(path.exists())
         self.assertEqual(serve.PROMPT, path.read_text(encoding='utf-8').strip())
         self.assertIn('risks', serve.PROMPT)
+        self.assertIn('evidenceId', serve.PROMPT)
+        self.assertIn('insight', serve.PROMPT)
 
     def test_env_override(self):
         with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False, encoding='utf-8') as f:

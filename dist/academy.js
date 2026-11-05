@@ -187,7 +187,7 @@
     const paint = (report, status, canRetry=false) => {
       if (!current()) return;
       const section = (key,title) => `<h4>${title}</h4><ul class="coach-lines">${report[key].length ? report[key].map(f => `<li>第 ${f.round} 回合 · ${esc(f.observation)}${f.insight ? '<br>'+esc(f.insight) : ''}</li>`).join('') : '<li>目前紀錄不足以判定。</li>'}</ul>`;
-      box.innerHTML = `<p class="mini-badge" role="status">${esc(status)}</p>${section('risks','目前風險')}${review ? section('strengths','決策優點')+section('weaknesses','缺點與待補強處'):''}
+      box.innerHTML = `<p class="mini-badge" role="status">${esc(status)}</p>${section('risks','目前風險')}${report.strengths.length ? section('strengths', review ? '決策優點' : '做得好的地方') : ''}${review ? section('weaknesses','缺點與待補強處'):''}
         ${canRetry ? '<button class="small-link" data-action="retry-coach">重試 AI 解說</button>' : ''}
         ${review ? '<details><summary>查看固定 JSON</summary><pre>'+esc(JSON.stringify(report,null,2))+'</pre></details>' : ''}`;
     };
