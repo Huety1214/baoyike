@@ -142,3 +142,22 @@ body.in-game .metric { display:flex; flex-direction:column; justify-content:cent
   body.in-game .play-toolbar .secondary { padding:10px 14px }
   body.in-game .left-column .metrics-grid { flex:none; grid-template-rows:none }
 }
+
+/* One-highlight-per-screen + tail-risk-first: chart floor lines, payout hero, folded lesson, planning-time risk focus */
+.floor-line { fill:none; stroke-width:2; stroke-dasharray:2 7; opacity:.55 }
+.floor-line.planned { stroke:#29664f }
+.floor-line.base { stroke:#8b507d }
+.floor-label { font:15px system-ui }
+.floor-label.planned { fill:#29664f }
+.floor-label.base { fill:#8b507d }
+.ledger article.payout { background:#e9f3de; border:1.5px solid #94af7d }
+details.lesson { margin-top:14px; border:1px solid var(--border); border-radius:11px; background:#fbfcf6 }
+details.lesson summary { cursor:pointer; font-weight:600; padding:12px 14px; color:#44544a }
+details.lesson>div { padding:0 14px 4px }
+.risk-panel.focus { border-color:#9cb98b; box-shadow:0 5px 22px #2d4d3226 }
+.risk-panel .eyebrow { display:block; margin-bottom:6px }
+.stress-alt { margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); color:#44544a }
+.stress-section .section-subtitle { margin-bottom:16px }
+body.in-game .metrics-grid { gap:7px }
+body.in-game .metric { padding:10px 11px }
+body.in-game .metric strong { font-size:19px }

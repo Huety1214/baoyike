@@ -74,6 +74,7 @@ await click('intro-confirm');
 ok.push(['game board', container('人生棋盤')]);
 ok.push(['left column metrics', container('left-column') && container('年度現金流')]);
 ok.push(['right column risk', container('right-column') && container('風險由誰承擔')]);
+ok.push(['risk scenarios live', container('失業半年') && container('自付後現金可支應')]);
 ok.push(['journal is toolbar button', container('data-action="journal"') && !container('journal-panel')]);
 ok.push(['planning centered', container('data-action="planning"')]);
 ok.push(['board token', container('board-token')]);
@@ -85,6 +86,11 @@ ok.push(['no english headings', !/>(THE JOURNEY|RISK CHECK|YOUR LEARNING|MID-GAM
 // 4. Play all 6 rounds.
 for (let i = 0; i < 6; i++) {
   await click('roll');
+  if (i === 0) {
+    ok.push(['event chart hero first', modalHtml().includes('ledger hero') && modalHtml().indexOf('cash-figure') < modalHtml().indexOf('規劃回饋與帳務明細')]);
+    ok.push(['chart floor lines', modalHtml().includes('floor-line planned') && modalHtml().includes('規劃最低')]);
+    ok.push(['lesson folded', /<details class="lesson">/.test(modalHtml())]);
+  }
   if (modalHtml().includes('quiz-option')) await click('answer', { index: 1 });
   await click('next');
 }
@@ -92,6 +98,8 @@ ok.push(['report reached', container('你的學習旅程')]);
 ok.push(['story line', container('story-line')]);
 ok.push(['radar chart', container('class="radar"')]);
 ok.push(['coach at top', html.indexOf('決策復盤') < html.indexOf('歷年期末現金')]);
+ok.push(['stress promoted', html.indexOf('把最差情況，先算給你看。') > -1 && html.indexOf('把最差情況，先算給你看。') < html.indexOf('決策復盤')]);
+ok.push(['stress baseline compare', container('stress-alt') && container('不新增投保：')]);
 ok.push(['assessment panel', container('契約理解評量')]);
 
 // 5. Restart returns to setup without resume banner, and intro selections reset.
