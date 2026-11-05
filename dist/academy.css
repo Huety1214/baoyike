@@ -106,8 +106,8 @@ body.in-game .right-column { display:flex; flex-direction:column; gap:14px; min-
 body.in-game .center-column { min-width:0; min-height:0; display:flex; flex-direction:column }
 body.in-game .metrics-grid { grid-template-columns:1fr; gap:8px; margin-bottom:0 }
 body.in-game .board-panel { flex:1; min-height:0; display:flex; flex-direction:column }
-body.in-game .board-wrap { flex:1; min-height:0; display:flex; align-items:center; justify-content:center }
-body.in-game .board { height:100%; max-width:100%; aspect-ratio:1; margin:auto; grid-template-rows:repeat(6,minmax(0,1fr)) }
+body.in-game .board-wrap { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; container-type:size }
+body.in-game .board { width:min(100cqw,100cqh); height:auto; aspect-ratio:1; margin:auto; grid-template-rows:repeat(6,minmax(0,1fr)) }
 body.in-game .journal-panel { flex:1; min-height:0; overflow-y:auto; margin:0 }
 @media(min-width:1450px){ body.in-game .workspace { grid-template-columns:260px minmax(0,1fr) 320px; gap:20px } }
 @media(max-width:1160px){
@@ -117,7 +117,7 @@ body.in-game .journal-panel { flex:1; min-height:0; overflow-y:auto; margin:0 }
   body.in-game .workspace { display:flex; flex-direction:column; gap:17px }
   body.in-game .left-column, body.in-game .right-column { overflow:visible }
   body.in-game .metrics-grid { grid-template-columns:repeat(3,1fr); gap:9px }
-  body.in-game .board-wrap { flex:none }
+  body.in-game .board-wrap { flex:none; container-type:normal }
   body.in-game .board { width:min(100%,650px); height:auto }
   body.in-game .journal-panel { flex:none; overflow:visible }
 }
