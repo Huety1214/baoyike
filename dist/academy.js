@@ -6,9 +6,8 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const signed = n => (n > 0 ? '+' : '') + money(n), row = (label, value, cls = '') => `<div class="data-row"><span>${label}</span><strong class="${cls}">${value}</strong></div>`;
   let game = null, selectedRole = null, selectedPriorities = [], selectedEvidence = [], view = 'setup', rolling = false, toastTimer, storageWarning = false;
-  const DEMO_DICE = [2, 4, 6]; let demoMode = false, demoQueue = null, stashedGame = null;
   try { const saved = JSON.parse(localStorage.getItem(KEY)); if (saved && E.validSave(saved)) { game = E.upgradeSave(saved); view = game.completed ? 'report' : 'game'; } } catch { /* A broken or blocked save never prevents a new game. */ }
-  function save() { if (demoMode) return; try { localStorage.setItem(KEY, JSON.stringify(game)); } catch { if (!storageWarning) { toast('此瀏覽器無法保存進度；仍可遊玩並匯出紀錄。'); storageWarning = true; } } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(game)); } catch { if (!storageWarning) { toast('此瀏覽器無法保存進度；仍可遊玩並匯出紀錄。'); storageWarning = true; } } }
   function toast(message) { const el = document.querySelector('#toast'); el.textContent = message; el.classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('visible'), 3500); }
   function dialog(title, body, eyebrow = 'LifeRisk', actions = '') {
     content.innerHTML = `<div class="modal-body"><div class="modal-top"><div><div class="eyebrow">${eyebrow}</div><h2 id="modal-title">${title}</h2></div><button class="icon-btn" data-action="close" aria-label="關閉對話框">×</button></div>${body}${actions ? `<div class="modal-actions">${actions}</div>` : ''}</div>`;
@@ -21,7 +20,7 @@
   }
   function renderSetup() {
     app.innerHTML = `<section class="onboarding">${game ? `<div class="resume-banner"><div>一段人生，還在進行中。<small>${esc(game.client.name)} · ${esc(game.client.job)} · 已完成 ${game.round} / 6 回合。開始新局前，原進度仍會保留。</small></div><button class="secondary" data-action="resume">返回進度 →</button></div>` : ''}
-      <div class="onboarding-head"><span class="intro-badge">LIFERISK · 新人理專訓練場</span><h1>規劃一段人生，<span>看見保障的價值。</span></h1><p>理解客戶、規劃保障，在六回合的人生事件裡練習把風險說清楚。四種人生、五類教學契約、兩條時間線對照。</p><div class="steps-inline"><span><b>01</b>選擇客戶與優先需求</span><span><b>02</b>規劃保障、擲骰前行</span><span><b>03</b>六回合決算與教練復盤</span></div></div>
+      <div class="onboarding-head"><h1>規劃一段人生，<span>看見保障的價值。</span></h1><div class="steps-inline"><span><b>01</b>選擇客戶與優先需求</span><span><b>02</b>規劃保障、擲骰前行</span><span><b>03</b>六回合決算與教練復盤</span></div></div>
       <div class="setup-heading"><h1>選擇客戶</h1><span>四位角色 · 每局六回合</span></div>
       <div class="role-grid" role="group" aria-label="選擇模擬客戶">${E.roles.map(r => `<button class="role-card ${r.color} ${r.id === selectedRole ? 'selected' : ''}" data-action="role" data-id="${r.id}" aria-pressed="${r.id === selectedRole}"><span class="role-radio">${r.id === selectedRole ? '✓' : ''}</span><div class="avatar" aria-hidden="true">${r.icon}</div><h3>${r.name}<small>${r.job}</small></h3><p class="role-detail">${r.age} 歲 · ${r.family}</p><p class="tagline">${r.tagline}</p><div class="divider"></div>${row('年收入', wan(r.income))}${row('年生活費', wan(r.expense))}${row('現金 / 負債', `${wan(r.cash)} / ${wan(r.debt)}`)}</button>`).join('')}</div>
       ${selectedRole ? `<section class="analysis-panel panel" id="assessment"><div>
@@ -29,7 +28,7 @@
         <div class="priority-choices">${choices(E.evidenceOptions(E.roles.find(r => r.id === selectedRole)), selectedEvidence, 'evidence')}</div></div>
         <div><h2>依這些資料，哪些需求優先？</h2><p>選兩項（${selectedPriorities.length} / 2）</p>
         <div class="priority-choices">${selectedEvidence.length ? choices(E.priorities, selectedPriorities, 'priority') : '請先選擇客戶資料。'}</div></div></section>` : ''}
-      <div class="start-bar"><button class="secondary" data-action="demo">觀看示範局</button><button class="secondary" data-action="guide">玩法指南</button>
+      <div class="start-bar"><button class="secondary" data-action="guide">玩法指南</button>
       <button class="primary" data-action="start" ${selectedPriorities.length !== 2 || !selectedEvidence.length ? 'disabled' : ''}>開始遊戲 →</button></div></section>`;
   }
   function choices(options, selection, action) {
@@ -59,7 +58,7 @@
     const shownRound = Math.min(game.round + (game.phase === 'planning' ? 1 : 0), 6);
     const pips = Array.from({ length: 6 }, (_, i) => `<span class="${i + 1 <= game.round ? 'done ' : ''}${i + 1 === shownRound ? 'now' : ''}"></span>`).join('');
     app.innerHTML = `<header class="play-toolbar"><div class="client-summary"><h1>${s.name}<small>${s.alive ? s.job + ' · ' + s.age + ' 歲' : '家屬接續'}</small></h1><button class="small-link" data-action="client">客戶資料 ↗</button></div>
-      <button class="primary" data-action="planning">保險規劃</button></header>${demoMode ? '<div class="status-note">示範局：接下來的骰點已預設，本局操作不會覆蓋你原本的進度；重新選擇客戶即可離開示範。</div>' : ''}<div class="workspace">
+      <button class="primary" data-action="planning">保險規劃</button></header><div class="workspace">
     <section class="center-column"><div class="metrics-grid" aria-label="財務與保障儀表板">${metric('年度現金流', signed(m.flow), '收入－生活－還款－年繳', 'flow', '↗', m.flow < 0 ? 'negative' : '')}${metric('家庭保障缺口', wan(m.gap), '點擊查看估算依據', 'gap', '♡', m.gap ? 'negative' : '')}${metric('財務韌性', m.reserve.toFixed(1) + ' 個月', '現金預備金・目標 6 個月', 'reserve', '◎')}${metric('淨資產', wan(m.net), '含資產與保單帳戶－負債', 'net', '▥')}${metric('退休準備度', pct(m.retirement.ratio), '退休收入／退休生活支出', 'retirement', '◷')}${metric('年度保費與投入', wan(m.premium), '含保障、投資與年金投入', 'premium', '◇')}</div>
       ${s.insolvent ? '<div class="status-note">曾出現支付缺口：系統已先變現一般投資，再將不足額記為緊急借款。請檢查現金流與負債。</div>' : ''}
       <section class="panel board-panel"><div class="board-label"><h2>人生棋盤 <span class="eyebrow">THE JOURNEY</span></h2><div class="round-wrap"><div class="round-pips" aria-hidden="true">${pips}</div><span class="round-tag">第 ${shownRound} / 6 回合</span></div></div><div class="board">${tiles()}${boardToken(s)}<div class="board-center"><div class="dice ${rolling ? 'rolling' : ''}" aria-label="骰子 ${game.dice} 點">${['⚀','⚁','⚂','⚃','⚄','⚅'][game.dice - 1]}</div><button class="primary" data-action="${pending ? 'event' : 'roll'}" ${rolling ? 'disabled' : ''}>${rolling ? '擲骰中…' : pending ? '查看本回合結算' : '擲骰'}</button></div></div><div class="legend"><span><i class="risk"></i>風險事件</span><span><i class="market"></i>市場事件</span><span><i class="life"></i>人生事件</span><span><i></i>契約事件</span></div></section>
@@ -246,22 +245,10 @@
   async function doRoll() {
     if (!game || game.phase !== 'planning' || rolling) return;
     close(); rolling = true; renderGame();
-    let die;
-    if (demoMode && demoQueue?.length) die = demoQueue.shift();
-    else { const bytes = new Uint32Array(1); crypto.getRandomValues(bytes); die = bytes[0] % 6 + 1; }
+    const bytes = new Uint32Array(1); crypto.getRandomValues(bytes); const die = bytes[0] % 6 + 1;
     await new Promise(resolve=>setTimeout(resolve, matchMedia('(prefers-reduced-motion: reduce)').matches?0:650));
     try { E.roll(game,die); save(); } catch(error) { toast(error.message); }
     rolling = false; renderGame(); showEvent();
-  }
-  function startDemo() {
-    if (rolling) return;
-    if (!window.DemoSave) return toast('示範局資料尚未載入，請重新整理頁面。');
-    const candidate = JSON.parse(JSON.stringify(window.DemoSave));
-    if (!E.validSave(candidate)) return toast('示範局資料已過期，請重新整理頁面。');
-    stashedGame = demoMode ? stashedGame : game;
-    game = candidate; demoMode = true; demoQueue = [...DEMO_DICE];
-    close(); view = game.completed ? 'report' : 'game'; render(); window.scrollTo(0, 0);
-    toast('示範局已載入：這局操作不會覆蓋你的進度，重新選擇客戶即可離開示範。');
   }
   document.addEventListener('click', async event => {
     const button = event.target.closest('[data-action]'); if(!button || button.disabled) return;
@@ -269,12 +256,11 @@
     try {
       if(action==='close') return close();
       if(action==='guide') return guide();
-      if(action==='demo') return startDemo();
       if(action==='role') { if (selectedRole === id) return; selectedRole=id; selectedPriorities=[]; selectedEvidence=[]; return renderSetup(); }
       if(action==='priority') { if(selectedPriorities.includes(id)) selectedPriorities=selectedPriorities.filter(p=>p!==id); else if(selectedPriorities.length<2) selectedPriorities.push(id); else return toast('請先取消一項需求，再選擇新的優先需求。'); return renderSetup(); }
       if(action==='evidence') { selectedEvidence = selectedEvidence.includes(id) ? selectedEvidence.filter(x => x !== id) : [...selectedEvidence,id]; if (!selectedEvidence.length) selectedPriorities=[]; return renderSetup(); }
-      if(action==='start') { if(selectedPriorities.length!==2 || !selectedEvidence.length) return; game=E.create(selectedRole,selectedPriorities); game.evidence=[...selectedEvidence]; demoMode=false; demoQueue=null; view='game';save();render();window.scrollTo(0,0);return; }
-      if(action==='restart') { close(); if(rolling) return; if (demoMode) { if (stashedGame) game = stashedGame; stashedGame = null; demoMode = false; demoQueue = null; } view='setup'; selectedRole=null; selectedPriorities=[];selectedEvidence=[];render();window.scrollTo(0,0);return; }
+      if(action==='start') { if(selectedPriorities.length!==2 || !selectedEvidence.length) return; game=E.create(selectedRole,selectedPriorities); game.evidence=[...selectedEvidence]; view='game';save();render();window.scrollTo(0,0);return; }
+      if(action==='restart') { close(); if(rolling) return; view='setup'; selectedRole=null; selectedPriorities=[];selectedEvidence=[];render();window.scrollTo(0,0);return; }
       if(action==='resume'||action==='game') { close(); if(!game){view='setup';} else view=game.completed?'report':'game'; render();window.scrollTo(0,0);return; }
       if(!game) return;
       if(action==='policy') {

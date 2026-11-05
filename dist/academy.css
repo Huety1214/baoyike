@@ -70,7 +70,7 @@ dialog{border:1px solid var(--border);border-radius:23px;padding:0;width:min(720
 .round-pips span.done { background:var(--green) }
 .round-pips span.now { background:var(--lime); box-shadow:inset 0 0 0 1px #82a36e }
 .board-token { pointer-events:none; display:grid; align-content:start; justify-items:center; z-index:3; animation:token-pop .55s cubic-bezier(.34,1.56,.64,1) }
-.board-token span { width:32px; height:32px; border-radius:50%; background:var(--green); color:#fffef9; display:grid; place-items:center; font-size:16px; border:2px solid #fffef9; box-shadow:0 4px 9px #263f364d; margin-top:9px }
+.board-token span { width:30px; height:30px; border-radius:50%; background:var(--green); color:#fffef9; display:grid; place-items:center; font-size:15px; border:2px solid #fffef9; box-shadow:0 4px 9px #263f364d; margin-top:-15px }
 @keyframes token-pop { from { transform:scale(0) translateY(-12px) } to { transform:scale(1) translateY(0) } }
 .ledger.hero strong { font-size:25px }
 .ledger article { animation:rise .45s both }
@@ -83,4 +83,11 @@ dialog{border:1px solid var(--border);border-radius:23px;padding:0;width:min(720
 .radar line { stroke:#e6edda }
 .radar .score-shape { fill:#6d935e7a; stroke:#56814a; stroke-width:2; stroke-linejoin:round }
 .radar text { font:9.5px system-ui; fill:#71806a }
-@media(max-width:760px){ .board-token span { width:25px; height:25px; font-size:12px; margin-top:7px } .round-pips span { width:11px } .ledger.hero strong { font-size:20px } .story-line { font-size:11px } }
+@media(max-width:760px){ .board-token span { width:24px; height:24px; font-size:12px; margin-top:-12px } .round-pips span { width:11px } .ledger.hero strong { font-size:20px } .story-line { font-size:11px } }
+
+/* Landing hero — game-style highlight steps */
+.onboarding-head { margin:34px 0 38px }
+.steps-inline { flex-wrap:wrap; gap:13px; margin:22px auto 0 }
+.steps-inline span { display:flex; align-items:center; gap:10px; padding:12px 17px 12px 12px; background:var(--paper); border:1px solid var(--border); border-radius:14px; box-shadow:0 4px 0 #e3e8da; font-size:13.5px; font-weight:600; color:#3c5039 }
+.steps-inline b { display:grid; place-items:center; width:27px; height:27px; flex-shrink:0; border-radius:9px; background:var(--green); color:#fffef9; font-size:12px; margin:0 }
+@media(max-width:760px){ .onboarding-head{margin:12px 0 28px} .steps-inline{gap:9px} .steps-inline span{font-size:11px;padding:9px 12px 9px 9px;gap:8px} .steps-inline b{width:22px;height:22px;font-size:10px} }
