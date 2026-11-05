@@ -17,6 +17,7 @@ global.window = { scrollTo: () => {}, addEventListener: () => {} };
 global.localStorage = { getItem: () => null, setItem: () => {} };
 global.matchMedia = () => ({ matches: true });
 global.document = {
+  body: { classList: { toggle: () => {} } },
   querySelector: sel => (elCache[sel] ||= fakeEl()),
   addEventListener: (type, fn) => { if (type === 'click') clickHandlers.push(fn); },
   createElement: () => fakeEl()
@@ -60,13 +61,24 @@ ok.push(['guide cards', modalHtml().includes('guide-steps')]);
 ok.push(['guide steps', modalHtml().includes('認識客戶') && modalHtml().includes('結算復盤')]);
 await click('close');
 
-// 3. Click role -> straight into game board.
+// 3. Click role -> intro analysis popup -> straight into game board.
 await click('role', { id: 'engineer' });
+ok.push(['intro popup', modalHtml().includes('開局分析')]);
+ok.push(['intro locked (no close btn)', !modalHtml().includes('data-action="close"')]);
+await click('intro-evidence', { id: 'dependents' });
+await click('intro-evidence', { id: 'debt' });
+await click('intro-priority', { id: 'family' });
+await click('intro-priority', { id: 'medical' });
+ok.push(['intro confirm enabled', /data-action="intro-confirm"(?![^>]*disabled)/.test(modalHtml())]);
+await click('intro-confirm');
 ok.push(['game board', container('人生棋盤')]);
+ok.push(['left column metrics', container('left-column') && container('年度現金流')]);
+ok.push(['right column risk', container('right-column') && container('風險由誰承擔')]);
 ok.push(['board token', container('board-token')]);
 ok.push(['round pips', container('round-pips')]);
 ok.push(['no demo note', !container('示範局')]);
 ok.push(['demo save gone', !container('觀看示範局')]);
+ok.push(['no english headings', !/>(THE JOURNEY|RISK CHECK|YOUR LEARNING|MID-GAME|FIXED STRESS|ROUND )</.test(html + modalHtml())]);
 
 // 4. Play all 6 rounds.
 for (let i = 0; i < 6; i++) {
@@ -74,7 +86,7 @@ for (let i = 0; i < 6; i++) {
   if (modalHtml().includes('quiz-option')) await click('answer', { index: 1 });
   await click('next');
 }
-ok.push(['report reached', container('YOUR LEARNING JOURNEY')]);
+ok.push(['report reached', container('你的學習旅程')]);
 ok.push(['story line', container('story-line')]);
 ok.push(['radar chart', container('class="radar"')]);
 ok.push(['coach at top', html.indexOf('決策復盤') < html.indexOf('歷年期末現金')]);
