@@ -37,6 +37,7 @@ Object.defineProperty(elCache['#app'] ||= fakeEl(), 'innerHTML', {
 function click(action, extra = {}) {
   for (const fn of clickHandlers) fn({ target: { closest: () => ({ dataset: { action, ...extra }, disabled: false }) } });
 }
+function toolbarHtml() { return elCache['#game-toolbar'].innerHTML || ''; }
 function modalHtml() { return elCache['#modal-content'].innerHTML || ''; }
 async function click(action, extra = {}) {
   for (const fn of clickHandlers) await fn({ target: { closest: () => ({ dataset: { action, ...extra }, disabled: false }) } });
@@ -54,6 +55,7 @@ ok.push(['setup steps', container('選擇客戶與優先需求')]);
 ok.push(['no analysis panel', !container('priority-choice') && !container('analysis-panel')]);
 ok.push(['no start banner', !container('還在進行中')]);
 ok.push(['no start button', !container('開始遊戲')]);
+ok.push(['setup toolbar hidden', elCache['#game-toolbar'].hidden && toolbarHtml() === '']);
 
 // 2. Guide dialog (mock-guide layout).
 await click('guide');
@@ -75,8 +77,9 @@ ok.push(['game board', container('人生棋盤')]);
 ok.push(['left column metrics', container('left-column') && container('年度現金流')]);
 ok.push(['right column risk', container('right-column') && container('風險由誰承擔')]);
 ok.push(['risk scenarios live', container('失業半年') && container('自付後現金可支應')]);
-ok.push(['journal is toolbar button', container('data-action="journal"') && !container('journal-panel')]);
-ok.push(['planning centered', container('data-action="planning"')]);
+ok.push(['journal is toolbar button', toolbarHtml().includes('data-action="journal"') && !container('journal-panel')]);
+ok.push(['planning in shared header', toolbarHtml().includes('data-action="planning"') && !container('play-toolbar')]);
+ok.push(['game toolbar visible with client', !elCache['#game-toolbar'].hidden && toolbarHtml().includes('data-action="client"') && toolbarHtml().includes('林先生')]);
 ok.push(['board token', container('board-token')]);
 ok.push(['round pips', container('round-pips')]);
 ok.push(['no demo note', !container('示範局')]);
@@ -106,6 +109,7 @@ for (let i = 0; i < 6; i++) {
   await click('next');
 }
 ok.push(['report reached', container('學習報告')]);
+ok.push(['report toolbar cleared', elCache['#game-toolbar'].hidden && toolbarHtml() === '']);
 ok.push(['single report title', !container('每一次選擇') && !container('財務的結果，與決策分開看')]);
 ok.push(['story line', container('story-line')]);
 ok.push(['radar chart', container('class="radar"')]);
@@ -117,6 +121,7 @@ ok.push(['assessment panel', container('契約理解評量')]);
 // 5. Restart returns to setup without resume banner, and intro selections reset.
 await click('restart');
 ok.push(['back to setup', container('選擇客戶')]);
+ok.push(['restart toolbar cleared', elCache['#game-toolbar'].hidden && toolbarHtml() === '']);
 ok.push(['no resume banner', !container('還在進行中')]);
 await click('role', { id: 'doctor' });
 ok.push(['intro popup again', modalHtml().includes('開局分析')]);
