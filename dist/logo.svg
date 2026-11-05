@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="LifeRisk logo">
+  <!-- Badge -->
+  <rect x="0" y="0" width="512" height="512" rx="110" fill="#FDF7EE"/>
+
+  <g transform="translate(0,-10)">
+    <!-- Shaft with J-hook (painted behind the canopy so it never clips the panels) -->
+    <path d="M 256 285 L 256 402 A 17 17 0 0 1 222 402" fill="none" stroke="#33475B" stroke-width="13" stroke-linecap="round"/>
+
+    <!-- Umbrella canopy: four pastel panels -->
+    <path d="M 256 150 A 140 150 0 0 0 116 300 Q 151 355 186 300 L 256 150 Z" fill="#A8DEC8"/>
+    <path d="M 256 150 L 186 300 Q 221 355 256 300 L 256 150 Z" fill="#ABDCF5"/>
+    <path d="M 256 150 L 256 300 Q 291 355 326 300 L 256 150 Z" fill="#FCE8A6"/>
+    <path d="M 256 150 L 326 300 Q 361 355 396 300 A 140 150 0 0 0 256 150 Z" fill="#F9C7D4"/>
+
+    <!-- Ferrule -->
+    <circle cx="256" cy="138" r="9" fill="#33475B"/>
+
+    <!-- Die -->
+    <g transform="translate(340 374) rotate(12)">
+      <rect x="-26" y="-26" width="52" height="52" rx="11" fill="#FFFFFF" stroke="#33475B" stroke-width="7"/>
+      <circle cx="-11.5" cy="-11.5" r="5.5" fill="#33475B"/>
+      <circle cx="11.5" cy="-11.5" r="5.5" fill="#33475B"/>
+      <circle cx="-11.5" cy="11.5" r="5.5" fill="#33475B"/>
+      <circle cx="11.5" cy="11.5" r="5.5" fill="#33475B"/>
+    </g>
+  </g>
+</svg>

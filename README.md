@@ -57,6 +57,7 @@ node --check dist/academy.js
 | 路徑 | 用途 |
 | --- | --- |
 | `dist/index.html` | 新版入口 |
+| `dist/logo.svg` | 品牌 logo（傘＋骰子徽章），同時作為 favicon |
 | `dist/academy.css` | 新版視覺與響應式版面 |
 | `dist/academy-engine.js` | 角色、契約、事件、財務、風險、評分與回饋規則 |
 | `dist/academy.js` | 視圖、互動與匯出 |
