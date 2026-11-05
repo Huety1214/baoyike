@@ -86,6 +86,7 @@ class PromptFile(unittest.TestCase):
         self.assertIn('risks', serve.PROMPT)
         self.assertIn('evidenceId', serve.PROMPT)
         self.assertIn('insight', serve.PROMPT)
+        self.assertIn('不超過 60 字', serve.PROMPT)  # prompt limit must stay under the 220-char server cap
 
     def test_env_override(self):
         with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False, encoding='utf-8') as f:
