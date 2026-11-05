@@ -5,7 +5,7 @@
   const money = n => Math.round(n).toLocaleString('zh-TW'), wan = n => (n / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 1 }) + ' 萬', pct = n => Math.round(n * 100) + '%';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const signed = n => (n > 0 ? '+' : '') + money(n), row = (label, value, cls = '') => `<div class="data-row"><span>${label}</span><strong class="${cls}">${value}</strong></div>`;
-  let game = null, view = 'setup', rolling = false, toastTimer, tokenPos = null;
+  let game = null, view = 'setup', rolling = false, walking = false, toastTimer, tokenPos = null;
   function toast(message) { const el = document.querySelector('#toast'); el.textContent = message; el.classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('visible'), 3500); }
   let modalLocked = false;
   function dialog(title, body, eyebrow = 'LifeRisk', actions = '', closable = true) {
@@ -34,7 +34,8 @@
   const COORDS = (() => { const positions = []; for (let x = 1; x <= 6; x++) positions.push([1, x]); for (let y = 2; y <= 5; y++) positions.push([y, 6]); for (let x = 6; x >= 1; x--) positions.push([6, x]); for (let y = 5; y >= 2; y--) positions.push([y, 1]); return positions; })();
   function tiles() {
     const icons = { life: '✿', risk: '♡', market: '↗', contract: '▤' }, labels = { life: '人生', risk: '風險', market: '市場', contract: '契約' };
-    return COORDS.map(([y,x], i) => { const c = E.tileCategory(i); return `<div class="tile ${c} ${i === game.position ? 'current' : ''}" style="grid-area:${y}/${x}" aria-label="第 ${i + 1} 格 ${E.categories[c]}${i === game.position ? '，目前位置' : ''}"><b class="tile-num">${String(i + 1).padStart(2, '0')}</b><span aria-hidden="true">${i === 0 ? '⌂' : icons[c]}</span><small>${labels[c]}</small></div>`; }).join('');
+    const cur = tokenPos ?? game.position;
+    return COORDS.map(([y,x], i) => { const c = E.tileCategory(i); return `<div class="tile ${c} ${i === cur ? 'current' : ''}" style="grid-area:${y}/${x}" aria-label="第 ${i + 1} 格 ${E.categories[c]}${i === cur ? '，目前位置' : ''}"><b class="tile-num">${String(i + 1).padStart(2, '0')}</b><span aria-hidden="true">${i === 0 ? '⌂' : icons[c]}</span><small>${labels[c]}</small></div>`; }).join('');
   }
   function boardToken(client) {
     const role = E.roles.find(r => r.id === game.roleId), pos = tokenPos ?? game.position;
@@ -243,32 +244,8 @@
     const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href=url; a.download=`liferisk-${game.roleId}-round-${game.round}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(url), 1000); toast('完整紀錄已匯出。');
   }
   const pause = ms => new Promise(r => setTimeout(r, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : ms));
-  async function animateTokenPath(fromPos, die) {
-    const board = app.querySelector('.board');
-    if (!board) return;
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const r = board.getBoundingClientRect(), gap = 6, cell = (r.width - 5 * gap) / 6;
-    let cur = fromPos;
-    for (let step = 1; step <= die; step++) {
-      const next = (fromPos + step) % 20;
-      const token = app.querySelector('.board-token');
-      if (!token || !token.isConnected) return;
-      const [cy, cx] = COORDS[cur], [ny, nx] = COORDS[next];
-      token.style.gridArea = `${ny}/${nx}`;
-      if (!reduce) {
-        const dot = token.querySelector('span');
-        dot.style.transition = 'none';
-        dot.style.transform = `translate(${(cx - nx) * (cell + gap)}px,${(cy - ny) * (cell + gap)}px)`;
-        await new Promise(rq => requestAnimationFrame(() => rq()));
-        dot.style.transition = 'transform .14s linear';
-        dot.style.transform = 'translate(0,0)';
-      }
-      cur = next;
-      await pause(110);
-    }
-  }
   async function doRoll() {
-    if (!game || game.phase !== 'planning' || rolling) return;
+    if (!game || game.phase !== 'planning' || rolling || walking) return;
     close();
     const fromPos = game.position;
     rolling = true; renderGame();
@@ -276,10 +253,17 @@
     await pause(700);
     try { E.roll(game, die); } catch(error) { rolling = false; renderGame(); return toast(error.message); }
     rolling = false;
+    walking = true;
     tokenPos = fromPos; renderGame();
     await pause(250);
-    await animateTokenPath(fromPos, die);
-    tokenPos = null;
+    for (let step = 1; step <= die; step++) {
+      tokenPos = (fromPos + step) % 20;
+      renderGame();
+      await pause(300);
+    }
+    tokenPos = null; renderGame();
+    await pause(500);
+    walking = false;
     showEvent();
   }
   document.addEventListener('click', async event => {
@@ -305,7 +289,7 @@
       if(action==='terms') { const p=E.products.find(p=>p.id===id); return dialog(p.name+' · '+p.type, `<span class="tag">${p.group}</span><p class="event-description" style="margin-top:15px">${p.terms}</p>${row('每單位年繳',money(p.premium)+' 元')}${row('最多單位',p.max)}<div class="explanation">規劃階段調整後，在本回合事件前生效；不保障已發生事件。這是簡化的虛構教學契約。</div>`, '契約條款', '<button class="secondary" data-action="planning">返回保險規劃</button>'); }
       if(action==='planning') return planning();
       if(action==='roll') return doRoll();
-      if(action==='event') return showEvent();
+      if(action==='event') { if (walking) return; return showEvent(); }
       if(action==='history') return showEvent(Number(button.dataset.round));
       if(action==='answer') { E.answer(game,Number(button.dataset.index));showEvent();document.querySelector('.quiz-answer')?.scrollIntoView({block:'nearest'});return; }
       if(action==='next') { E.next(game);close();view=game.completed?'report':'game';render();window.scrollTo(0,0); return; }
