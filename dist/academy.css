@@ -147,9 +147,9 @@ body.in-game .metric { display:flex; flex-direction:column; justify-content:cent
 .floor-line { fill:none; stroke-width:2; stroke-dasharray:2 7; opacity:.55 }
 .floor-line.planned { stroke:#29664f }
 .floor-line.base { stroke:#8b507d }
-.floor-label { font:15px system-ui }
-.floor-label.planned { fill:#29664f }
-.floor-label.base { fill:#8b507d }
+.plan-coach { margin-top:14px; border-top:1px solid var(--border); padding-top:12px }
+.plan-coach h3 { font-size:15px; margin-bottom:6px }
+.review-panel { padding:14px 20px; display:flex; justify-content:center }
 .ledger article.payout { background:#e9f3de; border:1.5px solid #94af7d }
 details.lesson { margin-top:14px; border:1px solid var(--border); border-radius:11px; background:#fbfcf6 }
 details.lesson summary { cursor:pointer; font-weight:600; padding:12px 14px; color:#44544a }

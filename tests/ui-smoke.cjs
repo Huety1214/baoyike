@@ -83,22 +83,29 @@ ok.push(['no demo note', !container('示範局')]);
 ok.push(['demo save gone', !container('觀看示範局')]);
 ok.push(['no english headings', !/>(THE JOURNEY|RISK CHECK|YOUR LEARNING|MID-GAME|FIXED STRESS|ROUND )</.test(html + modalHtml())]);
 
+// 3b. AI coach lives in the planning dialog, not on the board.
+await click('planning');
+ok.push(['coach in planning modal', modalHtml().includes('plan-coach') && modalHtml().includes('data-coach')]);
+ok.push(['board has no coach panel', !container('本回合風險提示')]);
+await click('close');
+
 // 4. Play all 6 rounds.
 for (let i = 0; i < 6; i++) {
   await click('roll');
   if (i === 0) {
     ok.push(['event chart hero first', modalHtml().includes('ledger hero') && modalHtml().indexOf('cash-figure') < modalHtml().indexOf('規劃回饋與帳務明細')]);
-    ok.push(['chart floor lines', modalHtml().includes('floor-line planned') && modalHtml().includes('規劃最低')]);
+    ok.push(['chart floor lines', modalHtml().includes('floor-line planned')]);
     ok.push(['lesson folded', /<details class="lesson">/.test(modalHtml())]);
   }
   if (modalHtml().includes('quiz-option')) await click('answer', { index: 1 });
   await click('next');
 }
-ok.push(['report reached', container('你的學習旅程')]);
+ok.push(['report reached', container('學習報告')]);
+ok.push(['single report title', !container('每一次選擇') && !container('財務的結果，與決策分開看')]);
 ok.push(['story line', container('story-line')]);
 ok.push(['radar chart', container('class="radar"')]);
 ok.push(['coach at top', html.indexOf('決策復盤') < html.indexOf('歷年期末現金')]);
-ok.push(['stress promoted', html.indexOf('把最差情況，先算給你看。') > -1 && html.indexOf('把最差情況，先算給你看。') < html.indexOf('決策復盤')]);
+ok.push(['stress promoted', html.indexOf('固定壓力測試') > -1 && html.indexOf('固定壓力測試') < html.indexOf('決策復盤')]);
 ok.push(['stress baseline compare', container('stress-alt') && container('不新增投保：')]);
 ok.push(['assessment panel', container('契約理解評量')]);
 

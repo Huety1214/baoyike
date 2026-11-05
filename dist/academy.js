@@ -51,8 +51,7 @@
       <button class="primary" data-action="planning">保險規劃</button><button class="secondary" data-action="journal">人生手帳</button></header><div class="workspace">
     <aside class="left-column"><div class="metrics-grid" aria-label="財務與保障儀表板">${metric('年度現金流', signed(m.flow), '收入－生活－還款－年繳', 'flow', '↗', m.flow < 0 ? 'negative' : '')}${metric('家庭保障缺口', wan(m.gap), '點擊查看估算依據', 'gap', '♡', m.gap ? 'negative' : '')}${metric('財務韌性', m.reserve.toFixed(1) + ' 個月', '現金預備金・目標 6 個月', 'reserve', '◎')}${metric('淨資產', wan(m.net), '含資產與保單帳戶－負債', 'net', '▥')}${metric('退休準備度', pct(m.retirement.ratio), '退休收入／退休生活支出', 'retirement', '◷')}${metric('年度保費與投入', wan(m.premium), '含保障、投資與年金投入', 'premium', '◇')}</div></aside>
     <section class="center-column">${s.insolvent ? '<div class="status-note">曾出現支付缺口：系統已先變現一般投資，再將不足額記為緊急借款。請檢查現金流與負債。</div>' : ''}<section class="panel board-panel"><div class="board-label"><h2>人生棋盤 <span class="eyebrow">六年旅程</span></h2><div class="round-wrap"><div class="round-pips" aria-hidden="true">${pips}</div><span class="round-tag">第 ${shownRound} / 6 回合</span></div></div><div class="board-wrap"><div class="board">${tiles()}${boardToken(s)}<div class="board-center"><div class="dice ${rolling ? 'rolling' : ''}" aria-label="骰子 ${game.dice} 點">${['⚀','⚁','⚂','⚃','⚄','⚅'][game.dice - 1]}</div><button class="primary" data-action="${pending ? 'event' : 'roll'}" ${rolling ? 'disabled' : ''}>${rolling ? '擲骰中…' : pending ? '查看本回合結算' : '擲骰'}</button></div></div></div><div class="legend"><span><i class="risk"></i>風險事件</span><span><i class="market"></i>市場事件</span><span><i class="life"></i>人生事件</span><span><i></i>契約事件</span></div></section>
-    </section><aside class="right-column">${riskPanel(s)}<section class="panel coach-panel"><h2>本回合風險提示</h2><div data-coach></div><button class="small-link" data-action="report">查看階段回顧 ↗</button></section></aside></div>`;
-    mountCoach(false);
+    </section><aside class="right-column">${riskPanel(s)}<section class="panel review-panel"><button class="small-link" data-action="report">查看階段回顧 ↗</button></section></aside></div>`;
   }
   function riskPanel(client) {
     const scenarios = [
@@ -74,7 +73,8 @@
   }
   function planning() {
     const s = game.client, m = E.metrics(s), locked = game.phase !== 'planning' || rolling;
-    dialog('保險規劃', `<p class="section-subtitle">${locked || !s.alive ? '目前僅供查看。' : '調整立即儲存，本回合擲骰前生效。'}</p><div class="products">${E.products.map(p => `<article class="product"><div class="product-icon" aria-hidden="true">${p.icon}</div><div><h3>${p.name}<small>${p.type}</small></h3><p>${p.description}</p><div class="product-bottom"><strong>NT$ ${money(p.premium)} <small>/ 年 / 單位</small></strong><button class="terms-btn" data-action="terms" data-id="${p.id}">查看條款 ↗</button></div></div><div class="stepper"><button data-action="policy" data-id="${p.id}" data-delta="-1" aria-label="減少${p.name}" ${locked || s.policies[p.id] === 0 || !s.alive ? 'disabled' : ''}>−</button><strong aria-label="${p.name} ${s.policies[p.id]} 單位">${s.policies[p.id]}</strong><button data-action="policy" data-id="${p.id}" data-delta="1" aria-label="增加${p.name}" ${locked || s.policies[p.id] >= p.max || !s.alive ? 'disabled' : ''}>＋</button></div></article>`).join('')}</div><div class="budget-line"><span>年繳佔收入 ${s.alive && s.income ? pct(m.premium / s.income) : '—'} · 當回合收取全年費用</span><strong class="${m.flow < 0 ? 'negative' : ''}">年餘額 ${signed(m.flow)}</strong></div>`, '本年度保單', '<button class="primary" data-action="close">返回棋盤</button>');
+    dialog('保險規劃', `<p class="section-subtitle">${locked || !s.alive ? '目前僅供查看。' : '調整立即儲存，本回合擲骰前生效。'}</p><div class="products">${E.products.map(p => `<article class="product"><div class="product-icon" aria-hidden="true">${p.icon}</div><div><h3>${p.name}<small>${p.type}</small></h3><p>${p.description}</p><div class="product-bottom"><strong>NT$ ${money(p.premium)} <small>/ 年 / 單位</small></strong><button class="terms-btn" data-action="terms" data-id="${p.id}">查看條款 ↗</button></div></div><div class="stepper"><button data-action="policy" data-id="${p.id}" data-delta="-1" aria-label="減少${p.name}" ${locked || s.policies[p.id] === 0 || !s.alive ? 'disabled' : ''}>−</button><strong aria-label="${p.name} ${s.policies[p.id]} 單位">${s.policies[p.id]}</strong><button data-action="policy" data-id="${p.id}" data-delta="1" aria-label="增加${p.name}" ${locked || s.policies[p.id] >= p.max || !s.alive ? 'disabled' : ''}>＋</button></div></article>`).join('')}</div><div class="budget-line"><span>年繳佔收入 ${s.alive && s.income ? pct(m.premium / s.income) : '—'} · 當回合收取全年費用</span><strong class="${m.flow < 0 ? 'negative' : ''}">年餘額 ${signed(m.flow)}</strong></div><div class="plan-coach"><h3>本回合風險提示</h3><div data-coach></div></div>`, '本年度保單', '<button class="primary" data-action="close">返回棋盤</button>');
+    mountCoach(false);
   }
   function cashChart(labels, planned, base) {
     const values = [...planned, ...base], low = Math.min(...values), high = Math.max(...values);
@@ -82,13 +82,9 @@
     const x = i => 80 + i * 420 / Math.max(1, labels.length - 1);
     const y = v => 142 - (v - lo) * 108 / (hi - lo);
     const line = (series, css) => `<polyline class="${css}" points="${series.map((v,i)=>x(i)+','+y(v)).join(' ')}"/>`;
-    const floors = [[Math.min(...planned), 'planned', '規劃最低'], [Math.min(...base), 'base', '不投保最低']];
-    const floorLines = floors.map(([v, cls, label], i) => {
-      const ty = Math.abs(y(floors[0][0]) - y(floors[1][0])) < 13 && i ? y(v) + 14 : y(v) - 7;
-      return `<line class="floor-line ${cls}" x1="80" x2="501" y1="${y(v)}" y2="${y(v)}"/><text class="floor-label ${cls}" x="86" y="${ty}">${label} ${wan(v)}</text>`;
-    }).join('');
-    return `<figure class="cash-figure"><figcaption>可用現金（新台幣） <small>實線 ● 目前規劃　虛線 ◇ 不新增投保　點線＝期間最低現金</small></figcaption>
-    <svg viewBox="0 0 550 180" role="img" aria-label="兩條路徑的可用現金與期間最低現金，精確金額見下方表格">
+    const floorLines = [[Math.min(...planned), 'planned'], [Math.min(...base), 'base']].map(([v, cls]) => `<line class="floor-line ${cls}" x1="80" x2="501" y1="${y(v)}" y2="${y(v)}"/>`).join('');
+    return `<figure class="cash-figure"><figcaption>可用現金（新台幣） <small>實線 ● 目前規劃　虛線 ◇ 不新增投保</small></figcaption>
+    <svg viewBox="0 0 550 180" role="img" aria-label="兩條路徑的可用現金，虛線標示各路徑期間最低現金，精確金額見下方表格">
     ${[lo,(hi+lo)/2,hi].map(v=>`<line x1="78" x2="501" y1="${y(v)}" y2="${y(v)}" stroke="#d5ded1"/><text x="70" y="${y(v)+4}" text-anchor="end">${wan(v)}</text>`).join('')}
     ${floorLines}
     ${line(planned,'planned-line')}${line(base,'base-line')}
@@ -171,12 +167,12 @@
 
   let coachTimer, activeRequest, coachOwner, activeKey, lastError;
   function mountCoach(review, retry = false) {
-    const g = game, box = app.querySelector('[data-coach]');
+    const g = game, box = app.querySelector('[data-coach]') || document.querySelector('[data-coach]');
     if (!box) return;
     const stage = review ? (g.completed ? 'final' : 'review') : 'round';
-    const pool = LifeCoach.candidates(g, review), input = LifeCoach.requestData(g,pool,stage);
+    const pool = window.LifeCoach.candidates(g, review), input = window.LifeCoach.requestData(g,pool,stage);
     const stamp = JSON.stringify(input), slot = stage + '-' + g.round;
-    const current = () => game === g && app.querySelector('[data-coach]') === box;
+    const current = () => game === g && (app.querySelector('[data-coach]') || document.querySelector('[data-coach]')) === box;
     const paint = (report, status, canRetry=false) => {
       if (!current()) return;
       const section = (key,title) => `<h4>${title}</h4><ul class="coach-lines">${report[key].length ? report[key].map(f => `<li>第 ${f.round} 回合 · ${esc(f.observation)}${f.insight ? '<br>'+esc(f.insight) : ''}</li>`).join('') : '<li>目前紀錄不足以判定。</li>'}</ul>`;
@@ -192,7 +188,7 @@
     if (coachOwner !== g || activeKey !== stamp || retry) {
       activeRequest?.abort(); activeRequest=null; lastError=null; coachOwner=g; activeKey=stamp;
     }
-    const fallback = LifeCoach.rules(pool,stage);
+    const fallback = window.LifeCoach.rules(pool,stage);
     g.coaching ??= {};
     g.coaching[slot] = {stamp, report:fallback};
     if (!review && g.phase !== 'planning') { paint(fallback,'事件已結算 · 規則摘要'); return; }
@@ -208,7 +204,7 @@
       try {
         const res=await fetch('/api/coach',{method:'POST',headers:{'Content-Type':'application/json'},body:stamp,signal:ctrl.signal});
         if(!res.ok) throw Error(res.status===503?'AI 尚未設定或暫時無法服務':res.status===429?'AI 請求繁忙':'AI 服務未能產生解說');
-        const report=LifeCoach.fromModel(pool,await res.json(),stage);
+        const report=window.LifeCoach.fromModel(pool,await res.json(),stage);
         if (!current() || ctrl!==activeRequest) return;
         g.coaching[slot]={stamp,report};  paint(report,'AI 教練 · 已引用本局紀錄');
       } catch(error) {
@@ -237,19 +233,19 @@
       { key: 'medical', title: '重大醫療支出 50 萬', note: '可用現金＋一般投資 − 扣理賠後醫療費' },
       { key: 'death', title: '家庭收入永久中斷', note: '有效身故保障 − 負債及五年家庭生活費' }
     ];
-    return `<section class="panel report-section"><span class="eyebrow">固定壓力測試</span><h2>把最差情況，先算給你看。</h2><p class="section-subtitle">保險用可負擔的年繳，換取最差情況的下限。三種壓力同時比較目前規劃與不新增投保。</p><div class="stress-grid">${cases.map(c => {
+    return `<section class="panel report-section"><span class="eyebrow">固定壓力測試</span><p class="section-subtitle">保險用可負擔的年繳，換取最差情況的下限。三種壓力同時比較目前規劃與不新增投保。</p><div class="stress-grid">${cases.map(c => {
       const d = st[c.key], alt = base[c.key];
       return `<div class="stress-card"><h3>${c.title}</h3><p>${c.note}</p><strong class="${d.remaining<0?'negative':'positive'}">${d.remaining<0?'缺口 ':'餘裕 '}${wan(Math.abs(d.remaining))}</strong><p>需求 ${wan(d.required)} · 可用 ${wan(d.available)}</p><p class="stress-alt">不新增投保：${alt.remaining<0?'缺口 ':'餘裕 '}${wan(Math.abs(alt.remaining))}${d.remaining>=0&&alt.remaining<0?' · 規劃接住了這個風險':''}</p></div>`;
     }).join('')}</div><p class="fine-print">使用目前狀態做相同壓力測試，不再抽機率；家庭責任的情境也採相同五年支出假設。此處呈現財務韌性，不增加或扣除原局資產。</p></section>`;
   }
   function renderReport() {
     const s = game.client, m = E.metrics(s), b = E.metrics(game.baseline), scoring = E.score(game), st = scoring.stress, bs = E.stress(game.baseline);
-    app.innerHTML = `<section class="report-page"><div class="report-heading"><span class="intro-badge">${game.completed ? '你的學習旅程' : '階段回顧'}</span><h1>${game.completed ? '每一次選擇，都讓你更接近專業。' : '停一下，看看目前的規劃。'}</h1><p>${s.name} · ${s.job} · ${game.round} / 6 回合 · ${game.completed ? '學習成果報告' : '階段回顧，尚非最終成績'}</p><p class="story-line">${storyLine(s, m)}</p></div><div class="report-grid"><section class="panel score-card"><span class="eyebrow">理專學習成果</span><div class="score-number">${scoring.total}<small> / ${scoring.max}</small></div><p>${scoring.max === 80 ? "契約理解尚未完成，目前列出其餘四項的 80 分小計。" : "五項評量已完成。"}</p><div class="score-items">${scoring.items.map(i => `<div class="score-item">${row(i.label, i.score == null ? "未評量" : `${i.score} / ${i.max}`)}<div class="bar"><span style="width:${i.score/i.max*100}%"></span></div></div>`).join('')}</div>${radar(scoring.items)}<button class="small-link" data-action="scoring">查看完整評分依據 ↗</button></section><section class="panel outcomes"><span class="eyebrow">人生財務成果</span><h2>財務的結果，與決策分開看。</h2><div class="detail-grid"><div class="detail-card"><h3>期末淨資產</h3><strong>${wan(m.net)}</strong><p>不新增投保路徑 ${wan(b.net)}</p></div><div class="detail-card"><h3>現金預備金</h3><strong>${m.reserve.toFixed(1)} 個月</strong><p>年度現金流 ${signed(m.flow)}</p></div><div class="detail-card"><h3>身故保障缺口</h3><strong class="${m.gap ? 'negative' : ''}">${wan(m.gap)}</strong><p>估計家庭需求 ${wan(m.need)}</p></div><div class="detail-card"><h3>退休準備度</h3><strong>${pct(m.retirement.ratio)}</strong><p>條件式收入試算</p></div></div><div class="divider"></div>${row('累計年繳（含投資與年金投入）', wan(s.premiumsPaid))}${row('其中保障險保費', wan(s.protectionCosts))}${row('另計帳戶費用與保障成本', wan(s.fees))}${row('累計契約給付', wan(s.claims))}${row('投資型與年金剩餘帳戶', wan(s.investAccount+s.annuityAccount))}<p class="fine-print">帳戶費用已從年繳或帳戶扣除，不在此再次扣款。兩條路徑都保留既有壽險。已發生支付缺口 ${wan(s.shortfall)}，按規則列入負債。</p></section></div>${stressPanel(st, bs)}<section class="panel report-section"><h2>決策復盤</h2><div data-coach></div>${initialNotes()}</section>${reportCash()}${assessmentPanel()}<section class="panel report-section"><h2>回顧每一個轉彎。</h2><div class="table-wrap"><table><thead><tr><th>回合</th><th>人生情境</th><th>年繳</th><th>契約給付</th><th>事件後淨資產</th><th>觀念題</th></tr></thead><tbody>${game.records.map(r=>`<tr><td>${r.round}</td><td><button class="small-link" data-action="history" data-round="${r.round}">${r.event.subtitle}</button></td><td>${wan(r.actual.paid)}</td><td>${wan(r.actual.claim)}</td><td>${wan(r.actual.after.net)}</td><td>${!r.quiz ? '無練習題' : game.answers.find(a=>a.round===r.round)?.correct === true ? '答對' : game.answers.some(a=>a.round===r.round) ? '答錯' : '未答'}</td></tr>`).join('')}</tbody></table></div></section><div class="report-actions">${game.completed ? '' : '<button class="secondary" data-action="resume">返回人生棋盤</button>'}<button class="secondary" data-action="export">下載完整決策紀錄 JSON ↓</button><button class="primary" data-action="restart">再練習一種人生 →</button></div></section>`;
+    app.innerHTML = `<section class="report-page"><div class="report-heading"><h1>${game.completed ? '學習報告' : '階段回顧'}</h1><p>${s.name} · ${s.job} · ${game.round} / 6 回合${game.completed ? ' · 六回合學習成果' : ' · 尚非最終成績'}</p><p class="story-line">${storyLine(s, m)}</p></div><div class="report-grid"><section class="panel score-card"><span class="eyebrow">理專學習成果</span><div class="score-number">${scoring.total}<small> / ${scoring.max}</small></div><p>${scoring.max === 80 ? "契約理解尚未完成，目前列出其餘四項的 80 分小計。" : "五項評量已完成。"}</p><div class="score-items">${scoring.items.map(i => `<div class="score-item">${row(i.label, i.score == null ? "未評量" : `${i.score} / ${i.max}`)}<div class="bar"><span style="width:${i.score/i.max*100}%"></span></div></div>`).join('')}</div>${radar(scoring.items)}<button class="small-link" data-action="scoring">查看完整評分依據 ↗</button></section><section class="panel outcomes"><span class="eyebrow">人生財務成果</span><div class="detail-grid"><div class="detail-card"><h3>期末淨資產</h3><strong>${wan(m.net)}</strong><p>不新增投保路徑 ${wan(b.net)}</p></div><div class="detail-card"><h3>現金預備金</h3><strong>${m.reserve.toFixed(1)} 個月</strong><p>年度現金流 ${signed(m.flow)}</p></div><div class="detail-card"><h3>身故保障缺口</h3><strong class="${m.gap ? 'negative' : ''}">${wan(m.gap)}</strong><p>估計家庭需求 ${wan(m.need)}</p></div><div class="detail-card"><h3>退休準備度</h3><strong>${pct(m.retirement.ratio)}</strong><p>條件式收入試算</p></div></div><div class="divider"></div>${row('累計年繳（含投資與年金投入）', wan(s.premiumsPaid))}${row('其中保障險保費', wan(s.protectionCosts))}${row('另計帳戶費用與保障成本', wan(s.fees))}${row('累計契約給付', wan(s.claims))}${row('投資型與年金剩餘帳戶', wan(s.investAccount+s.annuityAccount))}<p class="fine-print">帳戶費用已從年繳或帳戶扣除，不在此再次扣款。兩條路徑都保留既有壽險。已發生支付缺口 ${wan(s.shortfall)}，按規則列入負債。</p></section></div>${stressPanel(st, bs)}<section class="panel report-section"><h2>決策復盤</h2><div data-coach></div>${initialNotes()}</section>${reportCash()}${assessmentPanel()}<section class="panel report-section"><h2>回合總覽</h2><div class="table-wrap"><table><thead><tr><th>回合</th><th>人生情境</th><th>年繳</th><th>契約給付</th><th>事件後淨資產</th><th>觀念題</th></tr></thead><tbody>${game.records.map(r=>`<tr><td>${r.round}</td><td><button class="small-link" data-action="history" data-round="${r.round}">${r.event.subtitle}</button></td><td>${wan(r.actual.paid)}</td><td>${wan(r.actual.claim)}</td><td>${wan(r.actual.after.net)}</td><td>${!r.quiz ? '無練習題' : game.answers.find(a=>a.round===r.round)?.correct === true ? '答對' : game.answers.some(a=>a.round===r.round) ? '答錯' : '未答'}</td></tr>`).join('')}</tbody></table></div></section><div class="report-actions">${game.completed ? '' : '<button class="secondary" data-action="resume">返回人生棋盤</button>'}<button class="secondary" data-action="export">下載完整決策紀錄 JSON ↓</button><button class="primary" data-action="restart">再練習一種人生 →</button></div></section>`;
     mountCoach(true);
   }
   function scoringDetail() {
     const result = E.score(game);
-    dialog('分數可追溯，決策才能改善。', `<p class="event-description">每回合把你的保單配置放回同一個初始客戶作為標準情境，再平均評估。隨機事件的理賠金與期末資產不直接計分。</p>${result.items.map(i=>`<div class="priority-box"><h4>${i.label} · ${i.score ?? '未評量'} / ${i.max}</h4><p>${i.detail}</p></div>`).join('')}<p class="fine-print">需求分析採角色預設的兩項優先需求；本版開局不另勾選。契約理解使用終局固定三題；完成前其 20 分不列入分母。這是一套可檢查的 MVP 教學規則，尚未經正式教學成效驗證。</p>`, '固定評分依據');
+    dialog('評分依據', `<p class="event-description">每回合把你的保單配置放回同一個初始客戶作為標準情境，再平均評估。隨機事件的理賠金與期末資產不直接計分。</p>${result.items.map(i=>`<div class="priority-box"><h4>${i.label} · ${i.score ?? '未評量'} / ${i.max}</h4><p>${i.detail}</p></div>`).join('')}<p class="fine-print">需求分析採角色預設的兩項優先需求；本版開局不另勾選。契約理解使用終局固定三題；完成前其 20 分不列入分母。這是一套可檢查的 MVP 教學規則，尚未經正式教學成效驗證。</p>`, '固定評分依據');
   }
   let introEvidence = [], introPriorities = [];
   function introAnalysis() {
