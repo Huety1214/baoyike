@@ -2,12 +2,10 @@
 (() => {
   'use strict';
   const E = window.Academy, app = document.querySelector('#app'), modal = document.querySelector('#modal'), content = document.querySelector('#modal-content');
-  const KEY = 'baoyike-academy-v1', money = n => Math.round(n).toLocaleString('zh-TW'), wan = n => (n / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 1 }) + ' 萬', pct = n => Math.round(n * 100) + '%';
+  const money = n => Math.round(n).toLocaleString('zh-TW'), wan = n => (n / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 1 }) + ' 萬', pct = n => Math.round(n * 100) + '%';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const signed = n => (n > 0 ? '+' : '') + money(n), row = (label, value, cls = '') => `<div class="data-row"><span>${label}</span><strong class="${cls}">${value}</strong></div>`;
-  let game = null, selectedRole = null, selectedPriorities = [], selectedEvidence = [], view = 'setup', rolling = false, toastTimer, storageWarning = false;
-  try { const saved = JSON.parse(localStorage.getItem(KEY)); if (saved && E.validSave(saved)) { game = E.upgradeSave(saved); view = game.completed ? 'report' : 'game'; } } catch { /* A broken or blocked save never prevents a new game. */ }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(game)); } catch { if (!storageWarning) { toast('此瀏覽器無法保存進度；仍可遊玩並匯出紀錄。'); storageWarning = true; } } }
+  let game = null, view = 'setup', rolling = false, toastTimer;
   function toast(message) { const el = document.querySelector('#toast'); el.textContent = message; el.classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('visible'), 3500); }
   function dialog(title, body, eyebrow = 'LifeRisk', actions = '') {
     content.innerHTML = `<div class="modal-body"><div class="modal-top"><div><div class="eyebrow">${eyebrow}</div><h2 id="modal-title">${title}</h2></div><button class="icon-btn" data-action="close" aria-label="關閉對話框">×</button></div>${body}${actions ? `<div class="modal-actions">${actions}</div>` : ''}</div>`;
@@ -19,23 +17,10 @@
     if (view === 'setup') renderSetup(); else if (view === 'report') renderReport(); else renderGame();
   }
   function renderSetup() {
-    app.innerHTML = `<section class="onboarding">${game ? `<div class="resume-banner"><div>一段人生，還在進行中。<small>${esc(game.client.name)} · ${esc(game.client.job)} · 已完成 ${game.round} / 6 回合。開始新局前，原進度仍會保留。</small></div><button class="secondary" data-action="resume">返回進度 →</button></div>` : ''}
+    app.innerHTML = `<section class="onboarding">
       <div class="onboarding-head"><h1>規劃一段人生，<span>看見保障的價值。</span></h1><div class="steps-inline"><span><b>01</b>選擇客戶與優先需求</span><span><b>02</b>規劃保障、擲骰前行</span><span><b>03</b>六回合決算與教練復盤</span></div></div>
-      <div class="setup-heading"><h1>選擇客戶</h1><span>四位角色 · 每局六回合</span></div>
-      <div class="role-grid" role="group" aria-label="選擇模擬客戶">${E.roles.map(r => `<button class="role-card ${r.color} ${r.id === selectedRole ? 'selected' : ''}" data-action="role" data-id="${r.id}" aria-pressed="${r.id === selectedRole}"><span class="role-radio">${r.id === selectedRole ? '✓' : ''}</span><div class="avatar" aria-hidden="true">${r.icon}</div><h3>${r.name}<small>${r.job}</small></h3><p class="role-detail">${r.age} 歲 · ${r.family}</p><p class="tagline">${r.tagline}</p><div class="divider"></div>${row('年收入', wan(r.income))}${row('年生活費', wan(r.expense))}${row('現金 / 負債', `${wan(r.cash)} / ${wan(r.debt)}`)}</button>`).join('')}</div>
-      ${selectedRole ? `<section class="analysis-panel panel" id="assessment"><div>
-        <h2>你會留意哪些客戶資料？</h2><p>先點選一項或多項，作為規劃依據。</p>
-        <div class="priority-choices">${choices(E.evidenceOptions(E.roles.find(r => r.id === selectedRole)), selectedEvidence, 'evidence')}</div></div>
-        <div><h2>依這些資料，哪些需求優先？</h2><p>選兩項（${selectedPriorities.length} / 2）</p>
-        <div class="priority-choices">${selectedEvidence.length ? choices(E.priorities, selectedPriorities, 'priority') : '請先選擇客戶資料。'}</div></div></section>` : ''}
-      <div class="start-bar"><button class="secondary" data-action="guide">玩法指南</button>
-      <button class="primary" data-action="start" ${selectedPriorities.length !== 2 || !selectedEvidence.length ? 'disabled' : ''}>開始遊戲 →</button></div></section>`;
-  }
-  function choices(options, selection, action) {
-    return Object.entries(options).map(([id, label]) => {
-      const active = selection.includes(id);
-      return `<button class="priority-choice ${active ? 'selected' : ''}" aria-pressed="${active}" data-action="${action}" data-id="${id}">${active ? '✓ ' : ''}${label}</button>`;
-    }).join('');
+      <div class="setup-heading"><h1>選擇客戶</h1><div><button class="secondary" data-action="guide">玩法指南</button></div></div>
+      <div class="role-grid" role="group" aria-label="選擇模擬客戶">${E.roles.map(r => `<button class="role-card ${r.color}" data-action="role" data-id="${r.id}"><div class="avatar" aria-hidden="true">${r.icon}</div><h3>${r.name}<small>${r.job}</small></h3><p class="role-detail">${r.age} 歲 · ${r.family}</p><p class="tagline">${r.tagline}</p><div class="divider"></div>${row('年收入', wan(r.income))}${row('年生活費', wan(r.expense))}${row('現金 / 負債', `${wan(r.cash)} / ${wan(r.debt)}`)}</button>`).join('')}</div></section>`;
   }
   function initialNotes() {
     const facts = E.evidenceOptions(game.initialRole);
@@ -100,7 +85,7 @@
     const a = r.actual, b = r.baseline;
     const intermediate = Number.isFinite(a.beforeEventCash) && Number.isFinite(b.beforeEventCash);
     const series = v => [v.before.cash, ...(intermediate ? [v.beforeEventCash] : []), v.after.cash];
-    return `<h3>本回合的兩條現金路徑</h3>${cashChart(['年初', ...(intermediate ? ['年度收支後'] : []), '事件結算'], series(a), series(b))}
+    return `<h3>本回合的兩條現金路徑</h3>${cashChart(['年初', ...(intermediate ? ['收支後'] : []), '事件結算'], series(a), series(b))}
     ${row('本年繳納（含帳戶投入）', money(a.paid) + ' ／ ' + money(b.paid))}
     ${row('契約給付（規劃 ／ 不新增投保）', money(a.claim) + ' ／ ' + money(b.claim))}
     ${row('自付損失（規劃 ／ 不新增投保）', money(Math.max(0,a.outOfPocket)) + ' ／ ' + money(Math.max(0,b.outOfPocket)))}
@@ -199,7 +184,7 @@
         if(!res.ok) throw Error(res.status===503?'AI 尚未設定或暫時無法服務':res.status===429?'AI 請求繁忙':'AI 服務未能產生解說');
         const report=LifeCoach.fromModel(pool,await res.json(),stage);
         if (!current() || ctrl!==activeRequest) return;
-        g.coaching[slot]={stamp,report}; save(); paint(report,'AI 教練 · 已引用本局紀錄');
+        g.coaching[slot]={stamp,report};  paint(report,'AI 教練 · 已引用本局紀錄');
       } catch(error) {
         if (!current() || ctrl!==activeRequest) return;
         lastError= (error.name==='AbortError'?'AI 回覆逾時':error.message) + ' · 顯示規則摘要';
@@ -208,12 +193,12 @@
     },450);
   }
   function radar(items) {
-    const n = items.length, cx = 110, cy = 104, R = 68;
+    const n = items.length, cx = 125, cy = 112, R = 64;
     const pt = (r, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
     const ring = r => `<polygon class="ring" points="${items.map((_, i) => pt(r, i).map(v => v.toFixed(1)).join(',')).join(' ')}"/>`;
-    const axes = items.map((it, i) => { const [x, y] = pt(R, i), [lx, ly] = pt(R + 20, i); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/><text x="${lx.toFixed(1)}" y="${(ly + 3).toFixed(1)}" text-anchor="middle">${it.label}</text>`; }).join('');
+    const axes = items.map((it, i) => { const [x, y] = pt(R, i), [lx, ly] = pt(R + 26, i); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/><text x="${lx.toFixed(1)}" y="${(ly + 5).toFixed(1)}" text-anchor="middle">${it.label}</text>`; }).join('');
     const ratio = (it, i) => pt(R * ((it.score ?? 0) / it.max), i);
-    return `<svg class="radar" viewBox="0 0 220 210" role="img" aria-label="五個評量構面的雷達圖；未完成的契約理解以零分呈現">${ring(R)}${ring(R * .5)}${axes}<polygon class="score-shape" points="${items.map((it, i) => ratio(it, i).map(v => v.toFixed(1)).join(',')).join(' ')}"/>${items.map((it, i) => { const [x, y] = ratio(it, i); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#56814a"/>`; }).join('')}</svg>`;
+    return `<svg class="radar" viewBox="0 0 250 218" role="img" aria-label="五個評量構面的雷達圖；未完成的契約理解以零分呈現">${ring(R)}${ring(R * .5)}${axes}<polygon class="score-shape" points="${items.map((it, i) => ratio(it, i).map(v => v.toFixed(1)).join(',')).join(' ')}"/>${items.map((it, i) => { const [x, y] = ratio(it, i); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#56814a"/>`; }).join('')}</svg>`;
   }
   function storyLine(s, m) {
     const bits = [`六回合共經歷 ${game.records.length} 個事件`, `累計契約給付 ${wan(s.claims)} 元`, `期末淨資產 ${wan(m.net)}`];
@@ -227,16 +212,15 @@
   }
   function scoringDetail() {
     const result = E.score(game);
-    dialog('分數可追溯，決策才能改善。', `<p class="event-description">每回合把你的保單配置放回同一個初始客戶作為標準情境，再平均評估。隨機事件的理賠金與期末資產不直接計分。</p>${result.items.map(i=>`<div class="priority-box"><h4>${i.label} · ${i.score ?? '未評量'} / ${i.max}</h4><p>${i.detail}</p></div>`).join('')}<p class="fine-print">需求分析以角色預設的兩項優先需求評估；勾選的開局判斷另行保存。契約理解使用終局固定三題；完成前其 20 分不列入分母。這是一套可檢查的 MVP 教學規則，尚未經正式教學成效驗證。</p>`, 'DETERMINISTIC SCORING');
+    dialog('分數可追溯，決策才能改善。', `<p class="event-description">每回合把你的保單配置放回同一個初始客戶作為標準情境，再平均評估。隨機事件的理賠金與期末資產不直接計分。</p>${result.items.map(i=>`<div class="priority-box"><h4>${i.label} · ${i.score ?? '未評量'} / ${i.max}</h4><p>${i.detail}</p></div>`).join('')}<p class="fine-print">需求分析採角色預設的兩項優先需求；本版開局不另勾選。契約理解使用終局固定三題；完成前其 20 分不列入分母。這是一套可檢查的 MVP 教學規則，尚未經正式教學成效驗證。</p>`, 'DETERMINISTIC SCORING');
   }
   function guide() {
-    dialog('玩法指南', `<ol class="guide-list">
-      <li><strong>認識客戶。</strong> 選一位角色，先勾選扶養人數、負債等資料，再選兩項優先需求。選擇會存入決策紀錄。</li>
-      <li><strong>規劃本年度保單。</strong> 點「保險規劃」調整五類商品，對照年度現金流與風險試算。</li>
-      <li><strong>擲骰走棋。</strong> 每回合一年。落點決定風險、市場、人生或契約類別，再從該客戶的牌組隨機抽一張；該類的牌看完前不重複。</li>
-      <li><strong>核對結算。</strong> 比較本次給付、自付及兩條財務路徑。事件發生後保單鎖定，下一回合才能調整。</li>
-      <li><strong>完成六回合。</strong> 直接查看財務結果、開局判斷及每回合紀錄。若客戶身故，剩餘回合由家屬接續。</li>
-      </ol>`, 'LifeRisk', '<button class="primary" data-action="close">了解</button>');
+    dialog('玩法指南', `<div class="guide-steps">
+      <div class="guide-step"><span class="guide-num">1</span><div><h3>認識客戶</h3><p>選擇一位角色，他的人生立即開局：家庭、負債與收入都寫在客戶卡上。</p></div></div>
+      <div class="guide-step"><span class="guide-num">2</span><div><h3>規劃保障</h3><p>點「保險規劃」調整五類教學商品，對照年度現金流與風險試算，擲骰前生效。</p></div></div>
+      <div class="guide-step"><span class="guide-num">3</span><div><h3>擲骰走棋</h3><p>每回合一年。落點決定事件類別，再從該客戶的專屬牌組抽卡；同類未見過的卡優先。</p></div></div>
+      <div class="guide-step"><span class="guide-num">4</span><div><h3>結算復盤</h3><p>比較本次給付、自付與兩條現金路徑。完成六回合後查看財務成果與教練復盤。</p></div></div>
+      </div>`, 'LifeRisk', '<button class="primary" data-action="close">了解</button>');
   }
   function exportGame() {
     const blob = new Blob([JSON.stringify({ ...game, evaluation: E.score(game), exportedAt: new Date().toISOString(), coaching:game.coaching || null }, null, 2)], {type:'application/json'});
@@ -247,7 +231,7 @@
     close(); rolling = true; renderGame();
     const bytes = new Uint32Array(1); crypto.getRandomValues(bytes); const die = bytes[0] % 6 + 1;
     await new Promise(resolve=>setTimeout(resolve, matchMedia('(prefers-reduced-motion: reduce)').matches?0:650));
-    try { E.roll(game,die); save(); } catch(error) { toast(error.message); }
+    try { E.roll(game,die);  } catch(error) { toast(error.message); }
     rolling = false; renderGame(); showEvent();
   }
   document.addEventListener('click', async event => {
@@ -256,27 +240,24 @@
     try {
       if(action==='close') return close();
       if(action==='guide') return guide();
-      if(action==='role') { if (selectedRole === id) return; selectedRole=id; selectedPriorities=[]; selectedEvidence=[]; return renderSetup(); }
-      if(action==='priority') { if(selectedPriorities.includes(id)) selectedPriorities=selectedPriorities.filter(p=>p!==id); else if(selectedPriorities.length<2) selectedPriorities.push(id); else return toast('請先取消一項需求，再選擇新的優先需求。'); return renderSetup(); }
-      if(action==='evidence') { selectedEvidence = selectedEvidence.includes(id) ? selectedEvidence.filter(x => x !== id) : [...selectedEvidence,id]; if (!selectedEvidence.length) selectedPriorities=[]; return renderSetup(); }
-      if(action==='start') { if(selectedPriorities.length!==2 || !selectedEvidence.length) return; game=E.create(selectedRole,selectedPriorities); game.evidence=[...selectedEvidence]; view='game';save();render();window.scrollTo(0,0);return; }
-      if(action==='restart') { close(); if(rolling) return; view='setup'; selectedRole=null; selectedPriorities=[];selectedEvidence=[];render();window.scrollTo(0,0);return; }
+      if(action==='role') { const role = E.roles.find(r => r.id === id); if (!role) return; game = E.create(id, role.priorities); view='game'; render(); window.scrollTo(0,0); return; }
+      if(action==='restart') { close(); if(rolling) return; view='setup'; render();window.scrollTo(0,0);return; }
       if(action==='resume'||action==='game') { close(); if(!game){view='setup';} else view=game.completed?'report':'game'; render();window.scrollTo(0,0);return; }
       if(!game) return;
       if(action==='policy') {
         const p=E.products.find(p=>p.id===id), target=game.client.policies[id]+Number(button.dataset.delta);
         if(target<game.client.policies[id] && ['investment','annuity'].includes(id)) { const account=game.client[id==='investment'?'investAccount':'annuityAccount']; if(account>0) { const amount=Math.round(account/game.client.policies[id]); return dialog('調整前，先看解約成本。', `<p class="event-description">${p.name}減少一單位，會按比例提領帳戶並收取 5% 解約費。</p>${row('提領帳戶',money(amount))}${row('解約費',money(Math.round(amount*.05)))}${row('加入現金',money(amount-Math.round(amount*.05)))}`, 'REVIEW YOUR CHANGE', `<button class="secondary" data-action="planning">保留配置</button><button class="primary" data-action="policy-confirm" data-id="${id}" data-units="${target}">確認調整 →</button>`); } }
-        E.setPolicy(game,id,target);save();renderGame();planning(); document.querySelector(`[data-action="policy"][data-id="${id}"][data-delta="${button.dataset.delta}"]`)?.focus({preventScroll:true});return;
+        E.setPolicy(game,id,target);renderGame();planning(); document.querySelector(`[data-action="policy"][data-id="${id}"][data-delta="${button.dataset.delta}"]`)?.focus({preventScroll:true});return;
       }
-      if(action==='policy-confirm') { E.setPolicy(game,id,Number(button.dataset.units));save();renderGame();planning();return; }
+      if(action==='policy-confirm') { E.setPolicy(game,id,Number(button.dataset.units));renderGame();planning();return; }
       if(action==='terms') { const p=E.products.find(p=>p.id===id); return dialog(p.name+' · '+p.type, `<span class="tag">${p.group}</span><p class="event-description" style="margin-top:15px">${p.terms}</p>${row('每單位年繳',money(p.premium)+' 元')}${row('最多單位',p.max)}<div class="explanation">規劃階段調整後，在本回合事件前生效；不保障已發生事件。這是簡化的虛構教學契約。</div>`, 'READ THE CONTRACT', '<button class="secondary" data-action="planning">返回保險規劃</button>'); }
       if(action==='planning') return planning();
       if(action==='roll') return doRoll();
       if(action==='event') return showEvent();
       if(action==='history') return showEvent(Number(button.dataset.round));
-      if(action==='answer') { E.answer(game,Number(button.dataset.index));save();showEvent();document.querySelector('.quiz-answer')?.scrollIntoView({block:'nearest'});return; }
-      if(action==='next') { E.next(game);close();save();view=game.completed?'report':'game';render();window.scrollTo(0,0); return; }
-      if(action==='assessment') { E.recordAssessment(game,id,Number(button.dataset.index));save();renderReport();return; }
+      if(action==='answer') { E.answer(game,Number(button.dataset.index));showEvent();document.querySelector('.quiz-answer')?.scrollIntoView({block:'nearest'});return; }
+      if(action==='next') { E.next(game);close();view=game.completed?'report':'game';render();window.scrollTo(0,0); return; }
+      if(action==='assessment') { E.recordAssessment(game,id,Number(button.dataset.index));renderReport();return; }
       if(action==='retry-coach') return mountCoach(view==='report', true);
       if(action==='metric') return metricDetail(id);
       if(action==='scoring') return scoringDetail();
