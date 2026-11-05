@@ -27,6 +27,7 @@ global.Blob = class { constructor() {} };
 
 window.Academy = require(path.join(ROOT, 'academy-engine.js'));
 const E = window.Academy;
+require(path.join(ROOT, 'academy-demo.js'));
 window.LifeCoach = require(path.join(ROOT, 'coach.js'));
 require(path.join(ROOT, 'academy.js'));
 
@@ -131,6 +132,96 @@ await click('intro-priority', { id: 'retirement' });
 await click('intro-priority', { id: 'medical' });
 await click('intro-confirm');
 ok.push(['new game starts', container('人生棋盤')]);
+
+// 6. Isolated demo sessions exercise the actual view handlers and engine together.
+async function demoSession(search) {
+  const vm = require('node:vm'), fs = require('node:fs');
+  const elements = {}, handlers = [], rolls = [];
+  let current, exported, randomCalls = 0;
+  const context = vm.createContext({
+    window: { location: { search }, scrollTo() {}, addEventListener() {},
+      Academy: { ...E,
+        create(...args) { current = E.create(...args); return current; },
+        roll(...args) { const r = E.roll(...args); rolls.push(r); return r; }
+      }, LifeCoach: window.LifeCoach },
+    document: { body: { classList: { toggle() {} } },
+      querySelector: sel => (elements[sel] ||= fakeEl()),
+      addEventListener(type, fn) { if (type === 'click') handlers.push(fn); },
+      createElement: () => fakeEl() },
+    URLSearchParams, Uint32Array, AbortController, console,
+    crypto: { getRandomValues(bytes) { randomCalls++; bytes[0] = 2; } },
+    matchMedia: () => ({ matches: true }), setTimeout, clearTimeout,
+    URL: { createObjectURL: () => 'blob:demo', revokeObjectURL() {} },
+    Blob: class { constructor(parts) { exported = JSON.parse(parts.join('')); } }
+  });
+  for (const file of ['academy-demo.js', 'academy.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), context);
+  const act = async (action, extra = {}) => {
+    for (const fn of handlers) await fn({ target: { closest: () => ({ dataset: { action, ...extra }, disabled: false }) } });
+  };
+  const intro = async () => {
+    await act('intro-evidence', { id: 'dependents' });
+    await act('intro-priority', { id: 'liquidity' });
+    await act('intro-priority', { id: 'accident' });
+    await act('intro-confirm');
+  };
+  return { act, intro, elements, rolls, game: () => current, exported: () => exported, randomCalls: () => randomCalls };
+}
+const d = await demoSession('?demo=technician');
+const plain = await demoSession('');
+ok.push(['demo starts at identical home page', !d.game() && d.elements['#app'].innerHTML === plain.elements['#app'].innerHTML]);
+await d.act('role', { id: 'technician' });
+await plain.act('role', { id: 'technician' });
+ok.push(['demo uses identical locked analysis', d.game().roleId === 'technician' && d.elements['#modal-content'].innerHTML === plain.elements['#modal-content'].innerHTML && !d.elements['#modal-content'].innerHTML.includes('data-action="close"')]);
+await d.intro(); await plain.intro();
+ok.push(['demo uses identical board and toolbar', d.elements['#app'].innerHTML === plain.elements['#app'].innerHTML && d.elements['#game-toolbar'].innerHTML === plain.elements['#game-toolbar'].innerHTML]);
+const noInternalHints = session => !/固定情境示範|錄影|重新開始示範|指定演練|demo-banner|demo-story|demo-intro/.test(session.elements['#app'].innerHTML + session.elements['#modal-content'].innerHTML);
+async function playDemo(session, insured) {
+  if (insured) for (const id of ['health', 'accident']) await session.act('policy', { id, delta: '1' });
+  await session.act('close');
+  for (let i = 0; i < 6; i++) {
+    await session.act('roll');
+    ok.push(['demo event has normal labels ' + i, noInternalHints(session)]);
+    await session.act('next');
+  }
+}
+await playDemo(d, true);
+const first = JSON.stringify(d.game().records);
+const ids = ['review', 'disability', 'outpatient', 'layoff', 'raise', 'hospital'].map(id => 'technician-' + id);
+ok.push(['demo fixed events', JSON.stringify(d.game().records.map(r => r.event.id)) === JSON.stringify(ids)]);
+ok.push(['demo dice match board categories', JSON.stringify(d.game().records.map(r => r.die)) === '[3,2,2,1,4,1]' && d.game().records.every(r => E.tileCategory(r.position) === r.event.category)]);
+ok.push(['demo bypasses random dice', d.randomCalls() === 0]);
+ok.push(['demo engine outcomes', JSON.stringify(d.game().records.map(r => r.actual.after.cash)) === '[456000,572000,562000,340810,400810,521290]' && d.game().records[1].actual.claim === 300000]);
+ok.push(['demo report uses normal actions', d.game().completed && noInternalHints(d) && d.elements['#app'].innerHTML.includes('學習報告') && d.elements['#app'].innerHTML.includes('再練習一種人生 →')]);
+await d.act('journal');
+ok.push(['demo journal uses normal labels', noInternalHints(d) && d.elements['#modal-content'].innerHTML.includes('設備維修事故')]);
+await d.act('history', { round: '2' });
+ok.push(['demo history uses normal labels', noInternalHints(d) && d.elements['#modal-content'].innerHTML.includes('風險事件')]);
+await d.act('close');
+await d.act('export');
+ok.push(['demo export metadata', d.exported().demonstration.id === 'technician' && d.exported().demonstration.version === 1 && d.exported().records.every(r => r.teaching)]);
+await d.act('restart');
+ok.push(['demo restart returns to home', d.elements['#app'].innerHTML.includes('選擇客戶') && d.elements['#game-toolbar'].hidden]);
+await d.act('role', { id: 'technician' });
+ok.push(['demo reselect clears state and requires analysis', d.game().round === 0 && d.game().records.length === 0 && d.game().client.policies.health === 0 && d.elements['#modal-content'].innerHTML.includes('data-action="intro-confirm" disabled')]);
+await d.intro(); await playDemo(d, true);
+ok.push(['demo replay is deterministic', JSON.stringify(d.game().records) === first]);
+await d.act('restart'); await d.act('role', { id: 'technician' }); await d.intro(); await playDemo(d, false);
+ok.push(['demo manual policies change outcomes, not events', d.game().records[1].actual.claim === 0 && JSON.stringify(d.game().records.map(r => r.event.id)) === JSON.stringify(ids) && d.game().records.every(r => r.actual.after.cash === r.baseline.after.cash)]);
+// Restart must not reset the game underneath the asynchronous dice animation.
+await d.act('restart'); await d.act('role', { id: 'technician' }); await d.intro();
+const rollingDemo = d.act('roll'); await d.act('restart'); await rollingDemo;
+ok.push(['demo restart guarded while rolling', d.game().round === 1 && d.game().phase === 'event']);
+await d.act('next'); await d.act('restart');
+ok.push(['demo mid-game restart returns home', d.elements['#app'].innerHTML.includes('選擇客戶') && d.elements['#game-toolbar'].hidden]);
+await d.act('role', { id: 'engineer' });
+await d.intro(); await d.act('roll');
+ok.push(['other home roles stay selectable and random', d.game().roleId === 'engineer' && !d.game().demonstration && !d.game().records[0].teaching && d.randomCalls() === 1]);
+for (const search of ['', '?demo=unknown']) {
+  const normal = await demoSession(search);
+  ok.push(['normal setup for ' + (search || 'no parameter'), !normal.game() && normal.elements['#app'].innerHTML.includes('選擇客戶') && !normal.elements['#app'].innerHTML.includes('固定情境示範')]);
+  await normal.act('role', { id: 'technician' }); await normal.intro(); await normal.act('roll');
+  ok.push(['normal roll remains random ' + search, normal.randomCalls() === 1 && !normal.game().records[0].teaching && !normal.game().demonstration]);
+}
 
 const failed = ok.filter(([name, pass]) => !pass);
 console.log(ok.map(([n, p]) => (p ? 'PASS' : 'FAIL') + '  ' + n).join('\n'));

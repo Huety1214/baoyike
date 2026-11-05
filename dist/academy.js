@@ -2,6 +2,7 @@
 (() => {
   'use strict';
   const E = window.Academy, app = document.querySelector('#app'), toolbar = document.querySelector('#game-toolbar'), modal = document.querySelector('#modal'), content = document.querySelector('#modal-content');
+  const demo = new URLSearchParams(window.location?.search || '').get('demo') === window.AcademyDemo?.id ? window.AcademyDemo : null;
   const money = n => Math.round(n).toLocaleString('zh-TW'), wan = n => (n / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 1 }) + ' 萬', pct = n => Math.round(n * 100) + '%';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const signed = n => (n > 0 ? '+' : '') + money(n), row = (label, value, cls = '') => `<div class="data-row"><span>${label}</span><strong class="${cls}">${value}</strong></div>`;
@@ -13,6 +14,12 @@
     annuity: { plain: '每年繳 2.4 萬累積到 65 歲，帳戶除以 18 換成每年領的終身年金；累積期身故會把帳戶退還給家人。中途解約收 5%。', example: '' }
   };
   let game = null, view = 'setup', rolling = false, walking = false, toastTimer, tokenPos = null;
+  function startClient(id) {
+    introEvidence = []; introPriorities = [];
+    game = E.create(id, []);
+    if (demo && id === demo.roleId) game.demonstration = { id: demo.id, version: demo.version };
+    tokenPos = null; view = 'game'; render(); window.scrollTo(0,0); introAnalysis();
+  }
   function toast(message) { const el = document.querySelector('#toast'); el.textContent = message; el.classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('visible'), 3500); }
   let modalLocked = false;
   function dialog(title, body, eyebrow = 'LifeRisk', actions = '', closable = true, wide = false) {
@@ -140,7 +147,7 @@
     const historic = Number.isInteger(historyRound), r = historic ? game.records.find(r => r.round === historyRound) : game.pending;
     if (!r) return;
     const a = game.answers.find(a => a.round === r.round), q = r.quiz, payoutHero = r.actual.claim > 0;
-    dialog(r.event.title, `<span class="event-badge ${r.event.category}">${E.categories[r.event.category]} · ${r.event.subtitle}</span><p class="event-description" style="margin-top:15px">${r.event.description}</p><div class="ledger hero"><article><small>事件損失</small><strong>${money(r.actual.loss)}</strong></article><article${payoutHero ? ' class="payout"' : ''}><small>契約給付</small><strong class="positive"${payoutHero ? ' data-claim-count' : ''}>${money(r.actual.claim)}</strong></article><article><small>${r.event.kind === 'death' ? '給付扣除事件費用' : '本次自付'}</small><strong class="${r.actual.outOfPocket > 0 ? 'negative' : 'positive'}">${money(r.event.kind === 'death' ? -r.actual.outOfPocket : r.actual.outOfPocket)}</strong></article></div>${r.actual.marketChange ? `<div class="explanation">市場帳戶損益 ${signed(r.actual.marketChange)} 元；市場跌幅不屬於健康或意外險理賠。</div>` : ''}${compare(r)}<details class="lesson"><summary>規劃回饋與帳務明細</summary><div><div class="explanation"><b>本次規劃回饋</b><br>你開局關注${game.selectedPriorities.map(p=>E.priorities[p]).join("、")}。 ${eventLesson(r)}</div><div class="explanation"><strong>${r.actual.policy}</strong><br>${r.actual.reason}</div>${row('本回合年繳（含投入）', money(r.actual.paid))}${row('其中保障險保費', money(r.actual.protection))}${row('其中帳戶費用與保障成本', money(r.actual.fees))}</div></details>${q ? `<details class="quiz" ${a ? 'open' : ''}><summary>契約觀念練習（選答）</summary><h3>${q.question}</h3><div class="quiz-options">${q.options.map((o,i) => `<button class="quiz-option ${a && i === q.correct ? 'correct' : a && i === a.index ? 'incorrect' : ''}" data-action="answer" data-index="${i}" ${a || historic ? 'disabled' : ''}><b>${String.fromCharCode(65+i)}</b>${o}</button>`).join('')}</div>${a ? `<p class="quiz-answer">${a.correct ? '✓ 判斷正確。' : '這裡可以再想一想。'} ${q.explanation}</p>` : historic ? `<p class="fine-print">本回合未作答。</p>` : ''}</details>` : '' }`, `第 ${String(r.round).padStart(2,'0')} 回合 · ${r.scheduled ? '必修情境' : r.teaching ? '指定演練' : E.categories[r.event.category]}`, historic ? '<button class="secondary" data-action="close">返回棋盤</button>' : `<button class="primary" data-action="next">${game.round === 6 ? '查看六回合結算' : '下一回合'} →</button>`);
+    dialog(r.event.title, `<span class="event-badge ${r.event.category}">${E.categories[r.event.category]} · ${r.event.subtitle}</span><p class="event-description" style="margin-top:15px">${r.event.description}</p><div class="ledger hero"><article><small>事件損失</small><strong>${money(r.actual.loss)}</strong></article><article${payoutHero ? ' class="payout"' : ''}><small>契約給付</small><strong class="positive"${payoutHero ? ' data-claim-count' : ''}>${money(r.actual.claim)}</strong></article><article><small>${r.event.kind === 'death' ? '給付扣除事件費用' : '本次自付'}</small><strong class="${r.actual.outOfPocket > 0 ? 'negative' : 'positive'}">${money(r.event.kind === 'death' ? -r.actual.outOfPocket : r.actual.outOfPocket)}</strong></article></div>${r.actual.marketChange ? `<div class="explanation">市場帳戶損益 ${signed(r.actual.marketChange)} 元；市場跌幅不屬於健康或意外險理賠。</div>` : ''}${compare(r)}<details class="lesson"><summary>規劃回饋與帳務明細</summary><div><div class="explanation"><b>本次規劃回饋</b><br>你開局關注${game.selectedPriorities.map(p=>E.priorities[p]).join("、")}。 ${eventLesson(r)}</div><div class="explanation"><strong>${r.actual.policy}</strong><br>${r.actual.reason}</div>${row('本回合年繳（含投入）', money(r.actual.paid))}${row('其中保障險保費', money(r.actual.protection))}${row('其中帳戶費用與保障成本', money(r.actual.fees))}</div></details>${q ? `<details class="quiz" ${a ? 'open' : ''}><summary>契約觀念練習（選答）</summary><h3>${q.question}</h3><div class="quiz-options">${q.options.map((o,i) => `<button class="quiz-option ${a && i === q.correct ? 'correct' : a && i === a.index ? 'incorrect' : ''}" data-action="answer" data-index="${i}" ${a || historic ? 'disabled' : ''}><b>${String.fromCharCode(65+i)}</b>${o}</button>`).join('')}</div>${a ? `<p class="quiz-answer">${a.correct ? '✓ 判斷正確。' : '這裡可以再想一想。'} ${q.explanation}</p>` : historic ? `<p class="fine-print">本回合未作答。</p>` : ''}</details>` : '' }`, `第 ${String(r.round).padStart(2,'0')} 回合 · ${r.scheduled ? '必修情境' : r.teaching && !demo ? '指定演練' : E.categories[r.event.category]}`, historic ? '<button class="secondary" data-action="close">返回棋盤</button>' : `<button class="primary" data-action="next">${game.round === 6 ? '查看六回合結算' : '下一回合'} →</button>`);
     if (payoutHero) countClaim(r.actual.claim);
   }
   function metricDetail(id) {
@@ -268,7 +275,7 @@
       '第一步 · 需求分析', `<button class="primary" data-action="intro-confirm" ${introPriorities.length !== 2 || !introEvidence.length ? 'disabled' : ''}>開始第一回合 →</button>`, false);
   }
   function journalDialog() {
-    const entries = game.records.length ? [...game.records].reverse().map(r => `<button class="journal-entry" data-action="history" data-round="${r.round}"><span class="journal-dot">${r.event.icon}</span><div><small>第 ${String(r.round).padStart(2,'0')} 回合${r.scheduled ? ' · 必修情境' : r.teaching ? ' · 指定演練' : ''}</small><h4>${r.event.subtitle}</h4><p>${r.actual.claim ? '契約給付 ' + wan(r.actual.claim) : r.actual.marketChange ? '市場損益 ' + wan(r.actual.marketChange) : '本次損失 ' + wan(r.actual.loss)}</p></div></button>`).join('') : '<div class="empty-journal"><span>▤</span><p>還沒發生的故事，<br>從你的第一份規劃開始。</p></div>';
+    const entries = game.records.length ? [...game.records].reverse().map(r => `<button class="journal-entry" data-action="history" data-round="${r.round}"><span class="journal-dot">${r.event.icon}</span><div><small>第 ${String(r.round).padStart(2,'0')} 回合${r.scheduled ? ' · 必修情境' : r.teaching && !demo ? ' · 指定演練' : ''}</small><h4>${r.event.subtitle}</h4><p>${r.actual.claim ? '契約給付 ' + wan(r.actual.claim) : r.actual.marketChange ? '市場損益 ' + wan(r.actual.marketChange) : '本次損失 ' + wan(r.actual.loss)}</p></div></button>`).join('') : '<div class="empty-journal"><span>▤</span><p>還沒發生的故事，<br>從你的第一份規劃開始。</p></div>';
     dialog('人生手帳', `<div class="journal-list">${entries}</div>`, '至今的經歷', '<button class="secondary" data-action="export">匯出決策紀錄 ↓</button>');
   }
   function guide() {
@@ -289,9 +296,12 @@
     close();
     const fromPos = game.position;
     rolling = true; renderGame();
-    const bytes = new Uint32Array(1); crypto.getRandomValues(bytes); const die = bytes[0] % 6 + 1;
+    const chapter = game.demonstration ? demo?.chapters[game.round] : null;
+    const bytes = new Uint32Array(1);
+    if (!chapter) crypto.getRandomValues(bytes);
+    const die = chapter ? chapter.die : bytes[0] % 6 + 1;
     await pause(700);
-    try { E.roll(game, die); } catch(error) { rolling = false; renderGame(); return toast(error.message); }
+    try { E.roll(game, die, chapter?.event); } catch(error) { rolling = false; renderGame(); return toast(error.message); }
     rolling = false;
     walking = true;
     tokenPos = fromPos; renderGame();
@@ -312,8 +322,8 @@
     try {
       if(action==='close') return close();
       if(action==='guide') return guide();
-      if(action==='role') { const role = E.roles.find(r => r.id === id); if (!role) return; introEvidence = []; introPriorities = []; game = E.create(id, []); view='game'; render(); window.scrollTo(0,0); return introAnalysis(); }
-      if(action==='restart') { close(); if(rolling) return; game = null; introEvidence = []; introPriorities = []; view='setup'; render();window.scrollTo(0,0);return; }
+      if(action==='role') { if (rolling || walking || !E.roles.some(r => r.id === id)) return; return startClient(id); }
+      if(action==='restart') { if(rolling || walking) return; close(); game = null; introEvidence = []; introPriorities = []; view='setup'; render();window.scrollTo(0,0);return; }
       if(action==='resume'||action==='game') { close(); if(!game){view='setup';} else view=game.completed?'report':'game'; render();window.scrollTo(0,0);return; }
       if(!game) return;
       if(action==='intro-evidence') { introEvidence = introEvidence.includes(id) ? introEvidence.filter(x => x !== id) : [...introEvidence, id]; return introAnalysis(); }
