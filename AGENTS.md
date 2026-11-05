@@ -23,7 +23,7 @@ node --check dist/academy.js
 
 - `main` 是部署分支。push 到 `main` 後 VPS 以 systemd timer 每 2 分鐘 pull-based 自動部署：獨立 worktree 跑測試，全過才 `reset --hard`＋重啟，`/health` 失敗 15 秒內自動回滾（見 `docs/deploy-runbook.md`）。
 - 因此功能開發一律用 feature branch（如 `presentation-polish`），本地測試全過再合併 `main`。
-- **不要動 `deploy/`、`dist/v0.html` 與 `.env`**（`.env` 未追蹤，金鑰在裡面）。
+- `deploy/serve.py` 的教練 system prompt 已外部化到 `deploy/coach-prompt.txt`（可用環境變數 `COACH_PROMPT_FILE` 覆寫）；**之後調 prompt 只改那個 txt 再重啟服務，不要再動 `serve.py`**。`dist/v0.html` 與 `.env` 仍不要動（`.env` 未追蹤，金鑰在裡面）。
 
 ## 4. Commit 格式（強制）
 

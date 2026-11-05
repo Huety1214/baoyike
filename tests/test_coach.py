@@ -1,10 +1,12 @@
 import json
 import os
+import tempfile
 import threading
 import unittest
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from unittest.mock import patch
 from deploy import serve
 
@@ -74,3 +76,23 @@ class CoachAPI(unittest.TestCase):
         with patch.dict(os.environ,{'LLM_API_KEY':''}):
             with self.assertRaises(urllib.error.HTTPError) as err: self.call('round')
             self.assertEqual(err.exception.code,503)
+
+
+class PromptFile(unittest.TestCase):
+    def test_default_prompt_file_loaded(self):
+        path = Path(serve.__file__).resolve().with_name('coach-prompt.txt')
+        self.assertTrue(path.exists())
+        self.assertEqual(serve.PROMPT, path.read_text(encoding='utf-8').strip())
+        self.assertIn('risks', serve.PROMPT)
+
+    def test_env_override(self):
+        with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False, encoding='utf-8') as f:
+            f.write('自訂教練 prompt')
+            name = f.name
+        self.addCleanup(os.unlink, name)
+        with patch.dict(os.environ, {'COACH_PROMPT_FILE': name}):
+            self.assertEqual(serve.load_prompt(), '自訂教練 prompt')
+
+    def test_missing_file_returns_empty(self):
+        with patch.dict(os.environ, {'COACH_PROMPT_FILE': '/nonexistent/prompt.txt'}):
+            self.assertEqual(serve.load_prompt(), '')
