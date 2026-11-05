@@ -3,7 +3,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..', 'dist');
 
 function fakeEl() {
-  return new Proxy({ open: false, scrollTop: 0, textContent: '' }, {
+  return new Proxy({ open: false, scrollTop: 0, textContent: '', classList: { add: () => {}, remove: () => {}, toggle: () => {} } }, {
     get(t, k) { if (k in t) return t[k]; return () => {}; },
     set(t, k, v) { t[k] = v; return true; }
   });
@@ -83,10 +83,15 @@ ok.push(['no demo note', !container('示範局')]);
 ok.push(['demo save gone', !container('觀看示範局')]);
 ok.push(['no english headings', !/>(THE JOURNEY|RISK CHECK|YOUR LEARNING|MID-GAME|FIXED STRESS|ROUND )</.test(html + modalHtml())]);
 
-// 3b. AI coach lives in the planning dialog, not on the board.
+// 3b. AI coach lives in the planning dialog's left panel, not on the board; terms dialogs carry the plain-language template.
 await click('planning');
 ok.push(['coach in planning modal', modalHtml().includes('plan-coach') && modalHtml().includes('data-coach')]);
+ok.push(['plan grid two columns', modalHtml().includes('plan-grid')]);
+await click('terms', { id: 'health' });
+ok.push(['terms plain template', modalHtml().includes('AI 白話解釋') && modalHtml().includes('生活例子')]);
+await click('planning');
 ok.push(['board has no coach panel', !container('本回合風險提示')]);
+ok.push(['no stage review entry', !container('查看階段回顧')]);
 await click('close');
 
 // 4. Play all 6 rounds.

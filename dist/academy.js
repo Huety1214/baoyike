@@ -5,11 +5,19 @@
   const money = n => Math.round(n).toLocaleString('zh-TW'), wan = n => (n / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 1 }) + ' 萬', pct = n => Math.round(n * 100) + '%';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const signed = n => (n > 0 ? '+' : '') + money(n), row = (label, value, cls = '') => `<div class="data-row"><span>${label}</span><strong class="${cls}">${value}</strong></div>`;
+  const TERMS_PLAIN = {
+    life: { plain: '只在「身故」時理賠，每單位給付 300 萬；失業、失能、住院都不賠。這是留給家人的保障，不是醫療險，也不是失業救濟金。', example: '林先生有 360 萬房貸和一個小孩：萬一身故，300 萬理賠金可以讓家人先安頓房貸與生活，不至於馬上失去住所。' },
+    health: { plain: '只有「住院」才賠，門診不賠；每單位上限 8 萬，且總給付不會超過你實際花的醫療費用。', example: '膽結石開刀自費 10 萬：有一單位健康險理賠 8 萬，剩下 2 萬自付；後續門診回診的費用這張保單不會出。' },
+    accident: { plain: '只賠「外來突發事故」：意外門診最高 5 萬、意外失能定額 30 萬、意外身故 100 萬。疾病引起的醫療完全不賠。', example: '通勤摔車門診花 6 萬，意外險理賠 5 萬；但感冒或疾病門診，這張保單一毛都不賠。' },
+    investment: { plain: '年繳 3 萬扣除投入費、管理費與保障成本後才進帳戶；帳戶跟著市場漲跌，每年另扣帳戶 1%。身故時領「保額 100 萬」與「帳戶價值」較高者，不重複給付；解約收帳戶 5%費用。', example: '市場下跌 20% 的那年帳戶會縮水，但身故保障 100 萬照常給付——保障與投資分開算，跌的是帳戶，不是保障。' },
+    annuity: { plain: '每年繳 2.4 萬累積到 65 歲，帳戶除以 18 換成每年領的終身年金；累積期身故會把帳戶退還給家人。中途解約收 5%。', example: '' }
+  };
   let game = null, view = 'setup', rolling = false, walking = false, toastTimer, tokenPos = null;
   function toast(message) { const el = document.querySelector('#toast'); el.textContent = message; el.classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('visible'), 3500); }
   let modalLocked = false;
-  function dialog(title, body, eyebrow = 'LifeRisk', actions = '', closable = true) {
+  function dialog(title, body, eyebrow = 'LifeRisk', actions = '', closable = true, wide = false) {
     modalLocked = !closable;
+    modal.classList.toggle('wide', wide);
     content.innerHTML = `<div class="modal-body"><div class="modal-top"><div><div class="eyebrow">${eyebrow}</div><h2 id="modal-title">${title}</h2></div>${closable ? '<button class="icon-btn" data-action="close" aria-label="關閉對話框">×</button>' : ''}</div>${body}${actions ? `<div class="modal-actions">${actions}</div>` : ''}</div>`;
     if (!modal.open) modal.showModal();
     modal.scrollTop = 0;
@@ -51,7 +59,7 @@
       <button class="primary" data-action="planning">保險規劃</button><button class="secondary" data-action="journal">人生手帳</button></header><div class="workspace">
     <aside class="left-column"><div class="metrics-grid" aria-label="財務與保障儀表板">${metric('年度現金流', signed(m.flow), '收入－生活－還款－年繳', 'flow', '↗', m.flow < 0 ? 'negative' : '')}${metric('家庭保障缺口', wan(m.gap), '點擊查看估算依據', 'gap', '♡', m.gap ? 'negative' : '')}${metric('財務韌性', m.reserve.toFixed(1) + ' 個月', '現金預備金・目標 6 個月', 'reserve', '◎')}${metric('淨資產', wan(m.net), '含資產與保單帳戶－負債', 'net', '▥')}${metric('退休準備度', pct(m.retirement.ratio), '退休收入／退休生活支出', 'retirement', '◷')}${metric('年度保費與投入', wan(m.premium), '含保障、投資與年金投入', 'premium', '◇')}</div></aside>
     <section class="center-column">${s.insolvent ? '<div class="status-note">曾出現支付缺口：系統已先變現一般投資，再將不足額記為緊急借款。請檢查現金流與負債。</div>' : ''}<section class="panel board-panel"><div class="board-label"><h2>人生棋盤 <span class="eyebrow">六年旅程</span></h2><div class="round-wrap"><div class="round-pips" aria-hidden="true">${pips}</div><span class="round-tag">第 ${shownRound} / 6 回合</span></div></div><div class="board-wrap"><div class="board">${tiles()}${boardToken(s)}<div class="board-center"><div class="dice ${rolling ? 'rolling' : ''}" aria-label="骰子 ${game.dice} 點">${['⚀','⚁','⚂','⚃','⚄','⚅'][game.dice - 1]}</div><button class="primary" data-action="${pending ? 'event' : 'roll'}" ${rolling ? 'disabled' : ''}>${rolling ? '擲骰中…' : pending ? '查看本回合結算' : '擲骰'}</button></div></div></div><div class="legend"><span><i class="risk"></i>風險事件</span><span><i class="market"></i>市場事件</span><span><i class="life"></i>人生事件</span><span><i></i>契約事件</span></div></section>
-    </section><aside class="right-column">${riskPanel(s)}<section class="panel review-panel"><button class="small-link" data-action="report">查看階段回顧 ↗</button></section></aside></div>`;
+    </section><aside class="right-column">${riskPanel(s)}</aside></div>`;
   }
   function riskPanel(client) {
     const scenarios = [
@@ -73,7 +81,7 @@
   }
   function planning() {
     const s = game.client, m = E.metrics(s), locked = game.phase !== 'planning' || rolling;
-    dialog('保險規劃', `<p class="section-subtitle">${locked || !s.alive ? '目前僅供查看。' : '調整立即儲存，本回合擲骰前生效。'}</p><div class="products">${E.products.map(p => `<article class="product"><div class="product-icon" aria-hidden="true">${p.icon}</div><div><h3>${p.name}<small>${p.type}</small></h3><p>${p.description}</p><div class="product-bottom"><strong>NT$ ${money(p.premium)} <small>/ 年 / 單位</small></strong><button class="terms-btn" data-action="terms" data-id="${p.id}">查看條款 ↗</button></div></div><div class="stepper"><button data-action="policy" data-id="${p.id}" data-delta="-1" aria-label="減少${p.name}" ${locked || s.policies[p.id] === 0 || !s.alive ? 'disabled' : ''}>−</button><strong aria-label="${p.name} ${s.policies[p.id]} 單位">${s.policies[p.id]}</strong><button data-action="policy" data-id="${p.id}" data-delta="1" aria-label="增加${p.name}" ${locked || s.policies[p.id] >= p.max || !s.alive ? 'disabled' : ''}>＋</button></div></article>`).join('')}</div><div class="budget-line"><span>年繳佔收入 ${s.alive && s.income ? pct(m.premium / s.income) : '—'} · 當回合收取全年費用</span><strong class="${m.flow < 0 ? 'negative' : ''}">年餘額 ${signed(m.flow)}</strong></div><div class="plan-coach"><h3>本回合風險提示</h3><div data-coach></div></div>`, '本年度保單', '<button class="primary" data-action="close">返回棋盤</button>');
+    dialog('保險規劃', `<div class="plan-grid"><aside class="plan-coach"><h3>本回合風險提示</h3><div data-coach></div></aside><div class="plan-main"><p class="section-subtitle">${locked || !s.alive ? '目前僅供查看。' : '調整立即儲存，本回合擲骰前生效。'}</p><div class="products">${E.products.map(p => `<article class="product"><div class="product-icon" aria-hidden="true">${p.icon}</div><div><h3>${p.name}<small>${p.type}</small></h3><p>${p.description}</p><div class="product-bottom"><strong>NT$ ${money(p.premium)} <small>/ 年 / 單位</small></strong><button class="terms-btn" data-action="terms" data-id="${p.id}">查看條款 ↗</button></div></div><div class="stepper"><button data-action="policy" data-id="${p.id}" data-delta="-1" aria-label="減少${p.name}" ${locked || s.policies[p.id] === 0 || !s.alive ? 'disabled' : ''}>−</button><strong aria-label="${p.name} ${s.policies[p.id]} 單位">${s.policies[p.id]}</strong><button data-action="policy" data-id="${p.id}" data-delta="1" aria-label="增加${p.name}" ${locked || s.policies[p.id] >= p.max || !s.alive ? 'disabled' : ''}>＋</button></div></article>`).join('')}</div><div class="budget-line"><span>年繳佔收入 ${s.alive && s.income ? pct(m.premium / s.income) : '—'} · 當回合收取全年費用</span><strong class="${m.flow < 0 ? 'negative' : ''}">年餘額 ${signed(m.flow)}</strong></div></div></div>`, '本年度保單', '<button class="primary" data-action="close">返回棋盤</button>', true, true);
     mountCoach(false);
   }
   function cashChart(labels, planned, base) {
@@ -315,7 +323,10 @@
         E.setPolicy(game,id,target);renderGame();planning(); document.querySelector(`[data-action="policy"][data-id="${id}"][data-delta="${button.dataset.delta}"]`)?.focus({preventScroll:true});return;
       }
       if(action==='policy-confirm') { E.setPolicy(game,id,Number(button.dataset.units));renderGame();planning();return; }
-      if(action==='terms') { const p=E.products.find(p=>p.id===id); return dialog(p.name+' · '+p.type, `<span class="tag">${p.group}</span><p class="event-description" style="margin-top:15px">${p.terms}</p>${row('每單位年繳',money(p.premium)+' 元')}${row('最多單位',p.max)}<div class="explanation">規劃階段調整後，在本回合事件前生效；不保障已發生事件。這是簡化的虛構教學契約。</div>`, '契約條款', '<button class="secondary" data-action="planning">返回保險規劃</button>'); }
+      if(action==='terms') { const p=E.products.find(p=>p.id===id), t=TERMS_PLAIN[id]||{plain:'',example:''};
+        let example = t.example;
+        if (id==='annuity' && game) { const rp = E.retirement(game.client); example = `以你目前 ${game.client.age} 歲、年金 ${game.client.policies.annuity} 單位試算，65 歲時帳戶約 ${wan(rp.account)}，換算每年約領 ${wan(rp.annuity)} 元。`; }
+        return dialog(p.name+' · '+p.type, `<span class="tag">${p.group}</span><p class="event-description" style="margin-top:15px">${p.terms}</p><div class="plain-box"><h3>AI 白話解釋</h3><p>${t.plain}</p><div class="plain-example"><b>生活例子</b><p>${example}</p></div></div>${row('每單位年繳',money(p.premium)+' 元')}${row('最多單位',p.max)}<div class="explanation">規劃階段調整後，在本回合事件前生效；不保障已發生事件。這是簡化的虛構教學契約。</div>`, '契約條款', '<button class="secondary" data-action="planning">返回保險規劃</button>'); }
       if(action==='planning') return planning();
       if(action==='roll') return doRoll();
       if(action==='event') { if (walking) return; return showEvent(); }
