@@ -11,6 +11,7 @@
 - 六項可展開公式的財務儀表；固定壓力測試及標準化能力評分。
 - 一位客戶跑完六回合，直接查看報告；開局勾選的需求與判斷保留在客戶卡與匯出紀錄。
 - localStorage 續玩、決策歷程與學習報告 JSON 匯出、繁體中文響應式介面。
+- 開局可載入「示範局」：預錄的中段存檔加上預設骰點，快速看完整流程，且不覆蓋既有進度。
 
 ## VPS 啟動
 
@@ -60,6 +61,7 @@ node --check dist/academy.js
 | `dist/academy.css` | 新版視覺與響應式版面 |
 | `dist/academy-engine.js` | 角色、契約、事件、財務、風險、評分與回饋規則 |
 | `dist/academy.js` | 視圖、互動、存檔與匯出 |
+| `dist/demo-save.js` | 「觀看示範局」的預錄存檔，骰點已預設 |
 | `tests/academy.test.cjs` | 新版引擎測試 |
 | `docs/mvp-design.md` | 架構、公式、規則、假設與後續 LLM 邊界 |
 | `dist/v0.html` | 保留的 V0 入口及其既有資產 |
